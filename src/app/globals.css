@@ -2,14 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  height: 100%;
+}
+
 body {
+  height: 100%;
   font-family: Arial, Helvetica, sans-serif;
 }
 
 @layer base {
   :root {
-    --background: 240 4.8% 95.9%; /* Light Gray */
-    --foreground: 240 5.9% 10%;  /* Dark Gray */
+    --background: #fff; /* Light Gray */
+    --foreground: 240 5.9% 10%; /* Dark Gray */
     --card: 0 0% 100%;
     --card-foreground: 240 5.9% 10%;
     --popover: 0 0% 100%;

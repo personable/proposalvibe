@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 /**
  * @fileOverview This file defines a Genkit flow for categorizing transcribed text from construction job conversations.
@@ -11,43 +11,78 @@
  * - CategorizeInformationOutput - The return type for the categorizeInformation function.
  */
 
-import {ai} from '@/ai/ai-instance';
-import {z} from 'genkit';
+import { ai } from "@/ai/ai-instance";
+import { z } from "genkit";
 
 const CategorizeInformationInputSchema = z.object({
   transcribedText: z
     .string()
-    .describe('The transcribed text to be categorized.'),
+    .describe("The transcribed text to be categorized."),
 });
-export type CategorizeInformationInput = z.infer<typeof CategorizeInformationInputSchema>;
+export type CategorizeInformationInput = z.infer<
+  typeof CategorizeInformationInputSchema
+>;
 
-const ContactInfoSchema = z.object({
-    name: z.string().describe('Extracted contact name(s). Return "Not mentioned" if none found.'),
-    address: z.string().describe('Extracted full address. Attempt to complete if partial (e.g., add city/state/zip). Return "Not mentioned" if none found.'),
-    phone: z.string().describe('Extracted phone number(s). Return "Not mentioned" if none found.'),
-    email: z.string().describe('Extracted email address(es). Return "Not mentioned" if none found.'),
-}).describe('Structured contact information extracted from the text.');
-
+const ContactInfoSchema = z
+  .object({
+    name: z
+      .string()
+      .describe(
+        'Extracted contact name(s). Return "Not mentioned" if none found.'
+      ),
+    address: z
+      .string()
+      .describe(
+        'Extracted full address. Attempt to complete if partial (e.g., add city/state/zip). Return "Not mentioned" if none found.'
+      ),
+    phone: z
+      .string()
+      .describe(
+        'Extracted phone number(s). Return "Not mentioned" if none found.'
+      ),
+    email: z
+      .string()
+      .describe(
+        'Extracted email address(es). Return "Not mentioned" if none found.'
+      ),
+  })
+  .describe("Structured contact information extracted from the text.");
 
 const CategorizeInformationOutputSchema = z.object({
-  scopeOfWork: z.string().describe("A professionally rewritten, concise paragraph summarizing the project's scope of work, suitable for convincing a customer. Return 'Not mentioned' if no scope information found."),
+  scopeOfWork: z
+    .string()
+    .describe(
+      "Professionally rewritten paragraphs summarizing the project's scope of work, suitable for convincing a customer. Be friendly and down to earth. Avoid business jargon. Emphasize the care that will be taken by the service provider. Emphasize the care that will be taken with the customer property. Return 'Not mentioned' if no scope information found."
+    ),
   contactInformation: ContactInfoSchema,
-  timeline: z.string().describe('A professionally rewritten, concise paragraph summarizing the project timeline, suitable for convincing a customer. Return "Not mentioned" if no timeline information found.'),
-  budget: z.string().describe('Extracted budget or cost-related information. Return "Not mentioned" if no budget information found.'),
+  timeline: z
+    .string()
+    .describe(
+      'Professionally rewritten paragraphs summarizing the project timeline, suitable for convincing a customer. Be friendly and down to earth. Avoid business jargon. Return "Not mentioned" if no timeline information found.'
+    ),
+  budget: z
+    .string()
+    .describe(
+      'Extracted budget or cost-related information. Return "Not mentioned" if no budget information found.'
+    ),
 });
-export type CategorizeInformationOutput = z.infer<typeof CategorizeInformationOutputSchema>;
+export type CategorizeInformationOutput = z.infer<
+  typeof CategorizeInformationOutputSchema
+>;
 
-export async function categorizeInformation(input: CategorizeInformationInput): Promise<CategorizeInformationOutput> {
+export async function categorizeInformation(
+  input: CategorizeInformationInput
+): Promise<CategorizeInformationOutput> {
   return categorizeInformationFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'categorizeInformationPrompt',
+  name: "categorizeInformationPrompt",
   input: {
     schema: z.object({
       transcribedText: z
         .string()
-        .describe('The transcribed text to be categorized.'),
+        .describe("The transcribed text to be categorized."),
     }),
   },
   output: {
@@ -76,26 +111,29 @@ Output the results strictly in JSON format according to the provided output sche
 const categorizeInformationFlow = ai.defineFlow<
   typeof CategorizeInformationInputSchema,
   typeof CategorizeInformationOutputSchema
->({
-  name: 'categorizeInformationFlow',
-  inputSchema: CategorizeInformationInputSchema,
-  outputSchema: CategorizeInformationOutputSchema,
-}, async input => {
-  const {output} = await prompt(input);
-  // Handle potential null or undefined output gracefully
-  if (!output) {
+>(
+  {
+    name: "categorizeInformationFlow",
+    inputSchema: CategorizeInformationInputSchema,
+    outputSchema: CategorizeInformationOutputSchema,
+  },
+  async (input) => {
+    const { output } = await prompt(input);
+    // Handle potential null or undefined output gracefully
+    if (!output) {
       throw new Error("AI prompt did not return the expected output.");
-  }
-  // Ensure all fields exist, providing defaults based on the schema if necessary
-  return {
+    }
+    // Ensure all fields exist, providing defaults based on the schema if necessary
+    return {
       scopeOfWork: output.scopeOfWork || "Not mentioned",
       contactInformation: {
-          name: output.contactInformation?.name || "Not mentioned",
-          address: output.contactInformation?.address || "Not mentioned",
-          phone: output.contactInformation?.phone || "Not mentioned",
-          email: output.contactInformation?.email || "Not mentioned",
+        name: output.contactInformation?.name || "Not mentioned",
+        address: output.contactInformation?.address || "Not mentioned",
+        phone: output.contactInformation?.phone || "Not mentioned",
+        email: output.contactInformation?.email || "Not mentioned",
       },
       timeline: output.timeline || "Not mentioned",
       budget: output.budget || "Not mentioned",
-  };
-});
+    };
+  }
+);

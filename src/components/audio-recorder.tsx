@@ -39,7 +39,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       speechRecognitionRef.current.onend = null;
       speechRecognitionRef.current = null;
     }
-     setLastWord(null); // Clear last word when stopping/cleaning up
+    setLastWord(null); // Clear last word when stopping/cleaning up
   };
 
   const startRecording = useCallback(async () => {
@@ -61,7 +61,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: options.mimeType });
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: options.mimeType,
+        });
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
@@ -72,13 +74,16 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorder.start();
-      toast({ title: "Recording started", description: "Speak clearly into your microphone." });
-
+      toast({
+        title: "Recording started",
+        description: "Speak clearly into your microphone.",
+      });
     } catch (error) {
       console.error("Error accessing microphone for MediaRecorder:", error);
       toast({
         title: "Microphone Error",
-        description: "Could not access the microphone for recording. Please check permissions.",
+        description:
+          "Could not access the microphone for recording. Please check permissions.",
         variant: "destructive",
       });
       setIsRecording(false);
@@ -87,86 +92,88 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     }
 
     // --- SpeechRecognition Setup (for live feedback) ---
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
-        try {
-            const recognition = new SpeechRecognition();
-            speechRecognitionRef.current = recognition;
-            recognition.continuous = true;
-            recognition.interimResults = true;
-            recognition.lang = 'en-US'; // Or make configurable
+      try {
+        const recognition = new SpeechRecognition();
+        speechRecognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "en-US"; // Or make configurable
 
-            recognition.onresult = (event: SpeechRecognitionEvent) => {
-                let interimTranscript = '';
-                let finalTranscript = '';
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let interimTranscript = "";
+          let finalTranscript = "";
 
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-                }
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
 
-                const currentTranscript = finalTranscript || interimTranscript;
-                const words = currentTranscript.trim().split(/\s+/);
-                const latestWord = words.pop() || null;
+          const currentTranscript = finalTranscript || interimTranscript;
+          const words = currentTranscript.trim().split(/\s+/);
+          const latestWord = words.pop() || null;
 
-                // Update last word only if it's different and not empty
-                if (latestWord && latestWord !== lastWord) {
-                   setLastWord(latestWord);
-                }
-            };
+          // Update last word only if it's different and not empty
+          if (latestWord && latestWord !== lastWord) {
+            setLastWord(latestWord);
+          }
+        };
 
-            recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-                console.error("Speech recognition error:", event.error, event.message);
-                // Don't toast every error, can be noisy (e.g., 'no-speech')
-                if (event.error !== 'no-speech' && event.error !== 'aborted') {
-                    toast({
-                        title: "Speech Recognition Error",
-                        description: `Could not process speech: ${event.error}`,
-                        variant: "destructive",
-                    });
-                }
-                 // Don't stop recording, just stop recognition feedback
-                cleanupSpeechRecognition();
-            };
-
-             recognition.onend = () => {
-                 // Check if it ended naturally while still supposed to be recording
-                 if (isRecording && speechRecognitionRef.current) {
-                     console.log("Speech recognition ended prematurely, restarting...");
-                     // Optionally restart it, but be careful of infinite loops on errors
-                     // recognition.start();
-                 } else {
-                    // Normal end or stopped manually
-                    console.log("Speech recognition ended.");
-                 }
-             };
-
-
-            recognition.start();
-            console.log("Speech recognition started.");
-
-        } catch(err) {
-            console.error("Failed to initialize SpeechRecognition:", err);
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error(
+            "Speech recognition error:",
+            event.error,
+            event.message
+          );
+          // Don't toast every error, can be noisy (e.g., 'no-speech')
+          if (event.error !== "no-speech" && event.error !== "aborted") {
             toast({
-                title: "Browser Feature Error",
-                description: "Live speech feedback is not supported or failed to start.",
-                variant: "default",
+              title: "Speech Recognition Error",
+              description: `Could not process speech: ${event.error}`,
+              variant: "destructive",
             });
-            speechRecognitionRef.current = null; // Ensure it's null if setup fails
-        }
+          }
+          // Don't stop recording, just stop recognition feedback
+          cleanupSpeechRecognition();
+        };
 
+        recognition.onend = () => {
+          // Check if it ended naturally while still supposed to be recording
+          if (isRecording && speechRecognitionRef.current) {
+            console.log("Speech recognition ended prematurely, restarting...");
+            // Optionally restart it, but be careful of infinite loops on errors
+            // recognition.start();
+          } else {
+            // Normal end or stopped manually
+            console.log("Speech recognition ended.");
+          }
+        };
+
+        recognition.start();
+        console.log("Speech recognition started.");
+      } catch (err) {
+        console.error("Failed to initialize SpeechRecognition:", err);
+        toast({
+          title: "Browser Feature Error",
+          description:
+            "Live speech feedback is not supported or failed to start.",
+          variant: "default",
+        });
+        speechRecognitionRef.current = null; // Ensure it's null if setup fails
+      }
     } else {
       console.warn("SpeechRecognition API not supported in this browser.");
-       toast({
-            title: "Browser Feature Note",
-            description: "Live speech feedback is not supported in this browser.",
-            variant: "default",
-        });
+      toast({
+        title: "Browser Feature Note",
+        description: "Live speech feedback is not supported in this browser.",
+        variant: "default",
+      });
     }
-
   }, [onRecordingComplete, toast, lastWord]); // Added lastWord dependency for comparison
 
   const stopRecording = useCallback(() => {
@@ -174,32 +181,35 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop(); // onstop will handle the rest
       mediaRecorderRef.current = null;
-       toast({ title: "Recording stopped", description: "Processing audio..." });
+      toast({ title: "Recording stopped", description: "Processing audio..." });
     }
     // Stop SpeechRecognition
     cleanupSpeechRecognition();
     setIsRecording(false);
   }, [isRecording, toast]);
 
-
-   // Cleanup on unmount
-   useEffect(() => {
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-          mediaRecorderRef.current.stop();
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state === "recording"
+      ) {
+        mediaRecorderRef.current.stop();
       }
       cleanupSpeechRecognition();
       // Stop any associated media streams
       // (Handled in mediaRecorder.onstop, but good practice for safety)
-       if (mediaRecorderRef.current?.stream) {
-           mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-       }
+      if (mediaRecorderRef.current?.stream) {
+        mediaRecorderRef.current.stream
+          .getTracks()
+          .forEach((track) => track.stop());
+      }
     };
   }, []);
 
-
   return (
-    <div className="flex flex-col justify-center items-center my-6">
+    <div className="flex flex-col justify-center items-center">
       <Button
         onClick={isRecording ? stopRecording : startRecording}
         disabled={isProcessing}
@@ -207,7 +217,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         className={`w-24 h-24 rounded-full shadow-lg transition-transform transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed text-accent-foreground ${
           isRecording
             ? "bg-gradient-to-br from-red-500 to-red-700 hover:from-red-500/90 hover:to-red-700/90"
-             : "bg-gradient-to-br from-accent to-blue-700 hover:from-accent/90 hover:to-blue-700/90" // Adjusted end color for gradient
+            : "bg-gradient-to-br from-accent to-blue-700 hover:from-accent/90 hover:to-blue-700/90" // Adjusted end color for gradient
         }`}
         aria-label={isRecording ? "Stop Recording" : "Start Recording"}
       >
@@ -216,24 +226,19 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         ) : isRecording ? (
           <StopCircle className="h-10 w-10" />
         ) : (
-          <Mic className="h-10 w-10" />
+          <Mic className="h-12 w-12" />
         )}
       </Button>
-       {isRecording && (
-         <div className="mt-4 text-center h-6"> {/* Fixed height container */}
-           {lastWord ? (
-             <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5 animate-pulse">
-               <Ear className="w-4 h-4 text-accent"/> Heard: <span className="font-medium text-foreground">{lastWord}</span>
-             </p>
-           ) : (
-               <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
-                   <Ear className="w-4 h-4"/> Listening...
-               </p>
-           )}
-         </div>
-       )}
-        {!isRecording && !isProcessing && <div className="h-6 mt-4"></div> /* Placeholder */}
-         {isProcessing && <div className="h-6 mt-4"></div> /* Placeholder */}
+
+      {isRecording && (
+        <p
+          className="absolute left-0 right-0 animate-ping opacity-80 text-muted-foreground flex items-center uppercase text-2xl justify-center gap-1.5"
+          style={{ bottom: "125%", pointerEvents: "none" }}
+        >
+          {lastWord ? lastWord : "Recording..."}
+        </p>
+      )}
+      {isProcessing && <div className="h-6 mt-4"></div> /* Placeholder */}
     </div>
   );
 };
