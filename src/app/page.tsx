@@ -101,7 +101,7 @@ export default function Home() {
   };
 
    const renderSkeleton = () => (
-    <div className="grid md:grid-cols-2 gap-6 mt-8">
+    <div className="space-y-6 mt-8"> {/* Changed to vertical stack */}
       <Skeleton className="h-40 rounded-lg" /> {/* Increased height */}
       <Skeleton className="h-40 rounded-lg" />
       <Skeleton className="h-40 rounded-lg" />
@@ -191,64 +191,64 @@ export default function Home() {
 
 
       {!isLoading && !isCategorizing && categorizedInfo && (
-         <div className="grid md:grid-cols-2 gap-6 mt-8">
+         <div className="space-y-6 mt-8"> {/* Changed to vertical stack */}
             <CategoryCard
-              title="Scope of Work"
-              icon={ClipboardList}
-              isEditable
-              value={categorizedInfo.scopeOfWork}
-              onChange={(value) => handleCategoryChange('scopeOfWork', value)}
-            />
-             <CategoryCard
-              title="Contact Information"
-              icon={User}
-              // Remove isEditable and value/onChange, use content for custom layout
-            >
-                <div className="space-y-3"> {/* Add spacing between inputs */}
-                 <div>
-                   <Label htmlFor="contact-name" className="text-xs font-medium text-muted-foreground">Name</Label>
-                   <Input
-                     id="contact-name"
-                     value={contactName === "Not mentioned" ? "" : contactName}
-                     onChange={(e) => handleContactChange('name', e.target.value)}
-                     placeholder="Enter name..."
+             title="Contact Information"
+             icon={User}
+             // Remove isEditable and value/onChange, use content for custom layout
+           >
+               <div className="space-y-3"> {/* Add spacing between inputs */}
+                <div>
+                  <Label htmlFor="contact-name" className="text-xs font-medium text-muted-foreground">Name</Label>
+                  <Input
+                    id="contact-name"
+                    value={contactName === "Not mentioned" ? "" : contactName}
+                    onChange={(e) => handleContactChange('name', e.target.value)}
+                    placeholder="Enter name..."
+                    className="mt-1 h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contact-address" className="text-xs font-medium text-muted-foreground">Address</Label>
+                  <Input
+                    id="contact-address"
+                    value={contactAddress === "Not mentioned" ? "" : contactAddress}
+                    onChange={(e) => handleContactChange('address', e.target.value)}
+                    placeholder="Enter address..."
                      className="mt-1 h-9 text-sm"
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="contact-address" className="text-xs font-medium text-muted-foreground">Address</Label>
-                   <Input
-                     id="contact-address"
-                     value={contactAddress === "Not mentioned" ? "" : contactAddress}
-                     onChange={(e) => handleContactChange('address', e.target.value)}
-                     placeholder="Enter address..."
-                      className="mt-1 h-9 text-sm"
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="contact-phone" className="text-xs font-medium text-muted-foreground">Phone</Label>
-                   <Input
-                     id="contact-phone"
-                     type="tel"
-                     value={contactPhone === "Not mentioned" ? "" : contactPhone}
-                     onChange={(e) => handleContactChange('phone', e.target.value)}
-                     placeholder="Enter phone..."
-                      className="mt-1 h-9 text-sm"
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="contact-email" className="text-xs font-medium text-muted-foreground">Email</Label>
-                   <Input
-                     id="contact-email"
-                     type="email"
-                     value={contactEmail === "Not mentioned" ? "" : contactEmail}
-                     onChange={(e) => handleContactChange('email', e.target.value)}
-                     placeholder="Enter email..."
-                      className="mt-1 h-9 text-sm"
-                   />
-                 </div>
-               </div>
-            </CategoryCard>
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contact-phone" className="text-xs font-medium text-muted-foreground">Phone</Label>
+                  <Input
+                    id="contact-phone"
+                    type="tel"
+                    value={contactPhone === "Not mentioned" ? "" : contactPhone}
+                    onChange={(e) => handleContactChange('phone', e.target.value)}
+                    placeholder="Enter phone..."
+                     className="mt-1 h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contact-email" className="text-xs font-medium text-muted-foreground">Email</Label>
+                  <Input
+                    id="contact-email"
+                    type="email"
+                    value={contactEmail === "Not mentioned" ? "" : contactEmail}
+                    onChange={(e) => handleContactChange('email', e.target.value)}
+                    placeholder="Enter email..."
+                     className="mt-1 h-9 text-sm"
+                  />
+                </div>
+              </div>
+           </CategoryCard>
+           <CategoryCard
+             title="Scope of Work"
+             icon={ClipboardList}
+             isEditable
+             value={categorizedInfo.scopeOfWork}
+             onChange={(value) => handleCategoryChange('scopeOfWork', value)}
+           />
             <CategoryCard
               title="Timeline"
               icon={CalendarClock}
