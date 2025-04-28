@@ -1,9 +1,11 @@
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow for categorizing transcribed text into 'Scope of Work', 'Contact Information', 'Timeline', and 'Budget'.
+ * @fileOverview This file defines a Genkit flow for categorizing transcribed text from construction job conversations.
+ * It extracts information related to 'Scope of Work', 'Contact Information', 'Timeline', and 'Budget'.
+ * For 'Scope of Work' and 'Timeline', it rewrites the information into professional, concise paragraphs suitable for customer communication.
  *
- * - categorizeInformation - A function that categorizes input text.
+ * - categorizeInformation - A function that categorizes and potentially rewrites input text.
  * - CategorizeInformationInput - The input type for the categorizeInformation function.
  * - CategorizeInformationOutput - The return type for the categorizeInformation function.
  */
@@ -19,10 +21,10 @@ const CategorizeInformationInputSchema = z.object({
 export type CategorizeInformationInput = z.infer<typeof CategorizeInformationInputSchema>;
 
 const CategorizeInformationOutputSchema = z.object({
-  scopeOfWork: z.string().describe('Information related to the scope of work.'),
-  contactInformation: z.string().describe('Contact information extracted from the text.'),
-  timeline: z.string().describe('Timeline or schedule information.'),
-  budget: z.string().describe('Budget or cost-related information.'),
+  scopeOfWork: z.string().describe("A professionally rewritten, concise paragraph summarizing the project's scope of work, suitable for convincing a customer."),
+  contactInformation: z.string().describe('Extracted contact information (names, phone numbers, emails).'),
+  timeline: z.string().describe('A professionally rewritten, concise paragraph summarizing the project timeline, suitable for convincing a customer.'),
+  budget: z.string().describe('Extracted budget or cost-related information.'),
 });
 export type CategorizeInformationOutput = z.infer<typeof CategorizeInformationOutputSchema>;
 
@@ -40,25 +42,25 @@ const prompt = ai.definePrompt({
     }),
   },
   output: {
-    schema: z.object({
-      scopeOfWork: z.string().describe('Information related to the scope of work.'),
-      contactInformation: z.string().describe('Contact information extracted from the text.'),
-      timeline: z.string().describe('Timeline or schedule information.'),
-      budget: z.string().describe('Budget or cost-related information.'),
-    }),
+    schema: CategorizeInformationOutputSchema, // Use the updated schema
   },
-  prompt: `You are an AI assistant that analyzes transcribed text from construction job conversations and categorizes the information into the following categories:
+  prompt: `You are an AI assistant specializing in analyzing transcribed text from construction job conversations. Your task is to categorize the information and present it professionally.
 
-- Scope of Work: Details about the project's tasks, deliverables, and objectives.
-- Contact Information: Names, phone numbers, email addresses, and company affiliations of people involved.
-- Timeline: Dates, deadlines, and durations mentioned in the conversation.
-- Budget: Cost estimates, payment terms, and financial details.
+Analyze the following transcribed text:
+'''
+{{{transcribedText}}}
+'''
 
-Analyze the following transcribed text and extract relevant information for each category. If a category is not mentioned, leave that section blank.
+Categorize the information into the following sections:
 
-Transcribed Text: {{{transcribedText}}}
+1.  **Scope of Work**: Identify all details related to the project's tasks, deliverables, and objectives. Then, rewrite this information into a single, concise, professional-sounding paragraph. This paragraph should instill confidence in the customer regarding the understanding of the work required.
+2.  **Contact Information**: Extract any names, phone numbers, email addresses, or company affiliations mentioned. List them clearly.
+3.  **Timeline**: Identify all dates, deadlines, durations, or scheduling mentions. Then, rewrite this information into a single, concise, professional-sounding paragraph outlining the expected timeframe. This paragraph should convey efficiency and reliability to the customer.
+4.  **Budget**: Extract any cost estimates, payment terms, or financial details mentioned. List them clearly.
 
-Output the information in JSON format.
+If information for a specific category is not found in the text, indicate that clearly (e.g., "Not mentioned" or leave the field blank in the JSON).
+
+Output the results in JSON format according to the provided output schema. Ensure the 'scopeOfWork' and 'timeline' fields contain the rewritten professional paragraphs.
 `,
 });
 
@@ -71,5 +73,15 @@ const categorizeInformationFlow = ai.defineFlow<
   outputSchema: CategorizeInformationOutputSchema,
 }, async input => {
   const {output} = await prompt(input);
-  return output!;
+  // Handle potential null or undefined output gracefully
+  if (!output) {
+      throw new Error("AI prompt did not return the expected output.");
+  }
+  // Ensure all fields exist, even if empty, to match the schema
+  return {
+      scopeOfWork: output.scopeOfWork || "",
+      contactInformation: output.contactInformation || "",
+      timeline: output.timeline || "",
+      budget: output.budget || "",
+  };
 });
