@@ -8,18 +8,11 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react'; // Keep Trash2 for potential future use
+import LineItemTable from './line-item-table'; // Import the reusable table
 import type { LineItem } from '@/types';
 
 interface LineItemModalProps {
@@ -27,7 +20,7 @@ interface LineItemModalProps {
   onOpenChange: (open: boolean) => void;
   lineItems: LineItem[];
   onAddLineItem: (item: Omit<LineItem, 'id'>) => void;
-  // Add onRemoveLineItem if needed later
+  onRemoveLineItem?: (id: number) => void; // Make remove optional
 }
 
 const LineItemModal: React.FC<LineItemModalProps> = ({
@@ -35,6 +28,7 @@ const LineItemModal: React.FC<LineItemModalProps> = ({
   onOpenChange,
   lineItems,
   onAddLineItem,
+  onRemoveLineItem, // Receive remove function
 }) => {
   const [quantity, setQuantity] = useState<number | string>('');
   const [itemName, setItemName] = useState('');
@@ -87,14 +81,14 @@ const LineItemModal: React.FC<LineItemModalProps> = ({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle>Add Budget Line Items</DialogTitle>
+          <DialogTitle>Budget Line Items</DialogTitle> {/* Simplified title */}
           <DialogDescription>
-            Enter the details for each line item for this job's budget.
+            Add or view line items for this job's budget.
           </DialogDescription>
         </DialogHeader>
 
         {/* Form for adding new items */}
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_3fr_1fr_auto] gap-3 items-end py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_3fr_1fr_auto] gap-3 items-end py-4 border-b">
           <div>
             <Label htmlFor="quantity" className="text-right text-xs">
               Quantity
@@ -105,7 +99,7 @@ const LineItemModal: React.FC<LineItemModalProps> = ({
               value={quantity}
               onChange={(e) => handleNumericInputChange(setQuantity, e.target.value)}
               placeholder="e.g., 1"
-              className={`mt-1 ${errors.quantity ? 'border-destructive' : ''}`}
+              className={`mt-1 h-9 ${errors.quantity ? 'border-destructive' : ''}`} // Reduced height
               min="1"
             />
             {errors.quantity && <p className="text-xs text-destructive mt-1">{errors.quantity}</p>}
@@ -119,7 +113,7 @@ const LineItemModal: React.FC<LineItemModalProps> = ({
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
               placeholder="e.g., Drywall Sheet 4x8"
-              className={`mt-1 ${errors.itemName ? 'border-destructive' : ''}`}
+              className={`mt-1 h-9 ${errors.itemName ? 'border-destructive' : ''}`} // Reduced height
             />
              {errors.itemName && <p className="text-xs text-destructive mt-1">{errors.itemName}</p>}
           </div>
@@ -133,65 +127,21 @@ const LineItemModal: React.FC<LineItemModalProps> = ({
               value={price}
               onChange={(e) => handleNumericInputChange(setPrice, e.target.value)}
               placeholder="e.g., 15.50"
-               className={`mt-1 ${errors.price ? 'border-destructive' : ''}`}
+               className={`mt-1 h-9 ${errors.price ? 'border-destructive' : ''}`} // Reduced height
                min="0"
                step="0.01"
             />
              {errors.price && <p className="text-xs text-destructive mt-1">{errors.price}</p>}
           </div>
-          <Button onClick={handleAddItem} size="icon" variant="outline" aria-label="Add Item" className="mt-1">
+          <Button onClick={handleAddItem} size="icon" variant="outline" aria-label="Add Item" className="h-9 w-9 mt-1"> {/* Reduced size */}
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Table for displaying items */}
-         <div className="max-h-[300px] overflow-y-auto border rounded-md">
-            <Table>
-             <TableHeader>
-               <TableRow>
-                 <TableHead className="w-[80px]">Quantity</TableHead>
-                 <TableHead>Item Name</TableHead>
-                 <TableHead className="w-[100px] text-right">Price</TableHead>
-                  <TableHead className="w-[50px] text-right">Total</TableHead>
-                 {/* Add Actions column if needed later */}
-                 {/* <TableHead className="w-[50px]"></TableHead> */}
-               </TableRow>
-             </TableHeader>
-             <TableBody>
-               {lineItems.length === 0 && (
-                 <TableRow>
-                   <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                     No line items added yet.
-                   </TableCell>
-                 </TableRow>
-               )}
-               {lineItems.map((item) => (
-                 <TableRow key={item.id}>
-                   <TableCell className="font-medium">{item.quantity}</TableCell>
-                   <TableCell>{item.itemName}</TableCell>
-                   <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-medium">${(item.quantity * item.price).toFixed(2)}</TableCell>
-                   {/* Add remove button cell if needed */}
-                   {/* <TableCell>
-                     <Button variant="ghost" size="icon" className="h-8 w-8">
-                       <Trash2 className="h-4 w-4 text-destructive" />
-                     </Button>
-                   </TableCell> */}
-                 </TableRow>
-               ))}
-             </TableBody>
-           </Table>
-        </div>
-
-         {/* Display Total */}
-         {lineItems.length > 0 && (
-           <div className="mt-4 text-right font-semibold text-lg">
-             Total: $
-             {lineItems
-               .reduce((sum, item) => sum + item.quantity * item.price, 0)
-               .toFixed(2)}
-           </div>
-         )}
+        {/* Displaying items using the reusable component */}
+         <div className="py-4">
+           <LineItemTable lineItems={lineItems} />
+         </div>
 
 
         <DialogFooter>
@@ -200,7 +150,7 @@ const LineItemModal: React.FC<LineItemModalProps> = ({
               Close
             </Button>
           </DialogClose>
-          {/* Optionally add a Save button */}
+          {/* Optionally add a Save button if modal modifies existing items directly */}
           {/* <Button type="button">Save Changes</Button> */}
         </DialogFooter>
       </DialogContent>

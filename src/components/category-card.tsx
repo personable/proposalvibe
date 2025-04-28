@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 interface CategoryCardProps {
   title: string;
   icon: LucideIcon | React.ElementType; // Allow both Lucide icons and custom SVGs
-  content: string | React.ReactNode;
+  content: React.ReactNode; // Allow complex content like text + table
   actionButton?: React.ReactNode; // Optional action button
 }
 
@@ -16,17 +16,12 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ title, icon: Icon, content,
         <CardTitle className="text-lg font-semibold text-primary">{title}</CardTitle>
         <Icon className="h-6 w-6 text-accent" />
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col justify-between">
-        <div className="text-sm text-foreground prose prose-sm max-w-none">
-          {typeof content === 'string' ? (
-            // Use whitespace-pre-wrap to preserve newlines from AI output
-            <p style={{ whiteSpace: 'pre-wrap' }}>
-              {content || <span className="italic text-muted-foreground">No information provided.</span>}
-            </p>
-          ) : (
-            content
-          )}
+      <CardContent className="flex-grow flex flex-col justify-between pt-2"> {/* Reduced padding top */}
+        {/* Render content directly */}
+        <div className="text-sm text-foreground prose prose-sm max-w-none flex-grow">
+           {content}
         </div>
+        {/* Render action button at the bottom */}
         {actionButton && <div className="mt-auto pt-4">{actionButton}</div>}
       </CardContent>
     </Card>

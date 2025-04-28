@@ -7,10 +7,11 @@ import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
 import LineItemModal from "@/components/line-item-modal";
+import LineItemTable from "@/components/line-item-table"; // Import the new component
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle } from "lucide-react";
+import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle, Pencil } from "lucide-react"; // Added Pencil
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
 import type { LineItem } from "@/types";
@@ -74,10 +75,10 @@ export default function Home() {
 
    const renderSkeleton = () => (
     <div className="grid md:grid-cols-2 gap-6 mt-8">
-      <Skeleton className="h-32 rounded-lg" />
-      <Skeleton className="h-32 rounded-lg" />
-      <Skeleton className="h-32 rounded-lg" />
-      <Skeleton className="h-32 rounded-lg" />
+      <Skeleton className="h-40 rounded-lg" /> {/* Increased height */}
+      <Skeleton className="h-40 rounded-lg" />
+      <Skeleton className="h-40 rounded-lg" />
+      <Skeleton className="h-40 rounded-lg" />
     </div>
   );
 
@@ -85,16 +86,40 @@ export default function Home() {
     setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]); // Use timestamp as simple ID
   };
 
-  const addLineItemButton = (
+  // Function to remove a line item (optional for future use)
+  // const handleRemoveLineItem = (id: number) => {
+  //   setLineItems((prevItems) => prevItems.filter(item => item.id !== id));
+  // };
+
+  // Button to open the modal - text changes based on whether items exist
+  const manageLineItemsButton = (
       <Button
           variant="outline"
           size="sm"
           className="mt-4 text-accent hover:text-accent-foreground hover:bg-accent/10 border-accent/50"
           onClick={() => setIsModalOpen(true)}
         >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Line Items
+          {lineItems.length > 0 ? <Pencil className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+          {lineItems.length > 0 ? 'View/Edit Line Items' : 'Add Line Items'}
       </Button>
+  );
+
+  // Content for the Budget Card
+  const budgetCardContent = (
+    <>
+      {/* Display AI extracted budget text first */}
+      <p style={{ whiteSpace: 'pre-wrap' }} className="mb-4">
+        {categorizedInfo?.budget || <span className="italic text-muted-foreground">No budget information provided.</span>}
+      </p>
+
+      {/* Display LineItemTable if items exist */}
+      {lineItems.length > 0 && (
+         <div className="mt-4 border-t pt-4">
+             <h4 className="text-sm font-medium mb-2 text-primary">Line Items:</h4>
+            <LineItemTable lineItems={lineItems} />
+         </div>
+      )}
+    </>
   );
 
 
@@ -133,23 +158,35 @@ export default function Home() {
             <CategoryCard
               title="Scope of Work"
               icon={ClipboardList}
-              content={categorizedInfo.scopeOfWork}
+              content={
+                 <p style={{ whiteSpace: 'pre-wrap' }}>
+                   {categorizedInfo.scopeOfWork || <span className="italic text-muted-foreground">No information provided.</span>}
+                 </p>
+              }
             />
             <CategoryCard
               title="Contact Information"
               icon={User}
-              content={categorizedInfo.contactInformation}
+               content={
+                 <p style={{ whiteSpace: 'pre-wrap' }}>
+                   {categorizedInfo.contactInformation || <span className="italic text-muted-foreground">No information provided.</span>}
+                 </p>
+              }
             />
             <CategoryCard
               title="Timeline"
               icon={CalendarClock}
-              content={categorizedInfo.timeline}
+               content={
+                 <p style={{ whiteSpace: 'pre-wrap' }}>
+                   {categorizedInfo.timeline || <span className="italic text-muted-foreground">No information provided.</span>}
+                 </p>
+              }
             />
             <CategoryCard
               title="Budget"
               icon={DollarSign}
-              content={categorizedInfo.budget}
-              actionButton={addLineItemButton} // Pass the button here
+              content={budgetCardContent} // Use the constructed content
+              actionButton={manageLineItemsButton} // Pass the button here
             />
           </div>
         )}
@@ -165,6 +202,7 @@ export default function Home() {
         onOpenChange={setIsModalOpen}
         lineItems={lineItems}
         onAddLineItem={handleAddLineItem}
+        // onRemoveLineItem={handleRemoveLineItem} // Pass remove function if implemented
       />
     </main>
   );
