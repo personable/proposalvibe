@@ -2,7 +2,7 @@
 // TODO: Fix TS errors and remove the Nocheck
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
@@ -11,6 +11,8 @@ import LineItemTable from "@/components/line-item-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input"; // Import Input
+import { Label } from "@/components/ui/label"; // Import Label
 import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle, Pencil } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
@@ -24,7 +26,25 @@ export default function Home() {
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+
+  // State for individual contact fields
+  const [contactName, setContactName] = useState('');
+  const [contactAddress, setContactAddress] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+
   const { toast } = useToast();
+
+   // Effect to update contact input fields when categorizedInfo changes
+   useEffect(() => {
+    if (categorizedInfo?.contactInformation) {
+      setContactName(categorizedInfo.contactInformation.name || '');
+      setContactAddress(categorizedInfo.contactInformation.address || '');
+      setContactPhone(categorizedInfo.contactInformation.phone || '');
+      setContactEmail(categorizedInfo.contactInformation.email || '');
+    }
+  }, [categorizedInfo]);
+
 
   const handleRecordingComplete = async (audioDataUri: string) => {
     if (!audioDataUri) {
@@ -40,6 +60,12 @@ export default function Home() {
     setCategorizedInfo(null); // Clear previous categories
     setLineItems([]); // Clear previous line items
     setIsModalOpen(false); // Ensure modal is closed
+    // Clear contact fields
+    setContactName('');
+    setContactAddress('');
+    setContactPhone('');
+    setContactEmail('');
+
 
     try {
       // 1. Transcribe Audio
@@ -56,6 +82,7 @@ export default function Home() {
           transcribedText: transcriptionResult.transcription,
         });
         setCategorizedInfo(categorizationResult);
+
          toast({ title: "Categorization Complete!", description: "Job details sorted." });
       } else {
         throw new Error("Transcription failed or returned empty.");
@@ -86,13 +113,38 @@ export default function Home() {
     setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]); // Use timestamp as simple ID
   };
 
-  // Handlers for updating categorized info state from textareas
+  // Generic handler for Scope, Timeline, Budget textareas
   const handleCategoryChange = useCallback((category: keyof CategorizeInformationOutput, value: string) => {
     setCategorizedInfo(prev => {
       if (!prev) return null;
+      // Exclude contactInformation from this handler
+      if (category === 'contactInformation') return prev;
       return { ...prev, [category]: value };
     });
   }, []);
+
+   // Specific handler for Contact Information inputs
+  const handleContactChange = useCallback((field: keyof CategorizeInformationOutput['contactInformation'], value: string) => {
+      // Update the specific input field's state
+     if (field === 'name') setContactName(value);
+     else if (field === 'address') setContactAddress(value);
+     else if (field === 'phone') setContactPhone(value);
+     else if (field === 'email') setContactEmail(value);
+
+
+     // Update the main categorizedInfo state
+      setCategorizedInfo(prev => {
+          if (!prev) return null;
+          return {
+              ...prev,
+              contactInformation: {
+                  ...prev.contactInformation,
+                  [field]: value,
+              },
+          };
+      });
+  }, []);
+
 
   // Button to open the modal - text changes based on whether items exist
   const manageLineItemsButton = (
@@ -147,15 +199,56 @@ export default function Home() {
               value={categorizedInfo.scopeOfWork}
               onChange={(value) => handleCategoryChange('scopeOfWork', value)}
             />
-            <CategoryCard
+             <CategoryCard
               title="Contact Information"
               icon={User}
-              content={ // Contact info remains read-only
-                 <p style={{ whiteSpace: 'pre-wrap' }}>
-                   {categorizedInfo.contactInformation || <span className="italic text-muted-foreground">No information provided.</span>}
-                 </p>
-              }
-            />
+              // Remove isEditable and value/onChange, use content for custom layout
+            >
+                <div className="space-y-3"> {/* Add spacing between inputs */}
+                 <div>
+                   <Label htmlFor="contact-name" className="text-xs font-medium text-muted-foreground">Name</Label>
+                   <Input
+                     id="contact-name"
+                     value={contactName === "Not mentioned" ? "" : contactName}
+                     onChange={(e) => handleContactChange('name', e.target.value)}
+                     placeholder="Enter name..."
+                     className="mt-1 h-9 text-sm"
+                   />
+                 </div>
+                 <div>
+                   <Label htmlFor="contact-address" className="text-xs font-medium text-muted-foreground">Address</Label>
+                   <Input
+                     id="contact-address"
+                     value={contactAddress === "Not mentioned" ? "" : contactAddress}
+                     onChange={(e) => handleContactChange('address', e.target.value)}
+                     placeholder="Enter address..."
+                      className="mt-1 h-9 text-sm"
+                   />
+                 </div>
+                 <div>
+                   <Label htmlFor="contact-phone" className="text-xs font-medium text-muted-foreground">Phone</Label>
+                   <Input
+                     id="contact-phone"
+                     type="tel"
+                     value={contactPhone === "Not mentioned" ? "" : contactPhone}
+                     onChange={(e) => handleContactChange('phone', e.target.value)}
+                     placeholder="Enter phone..."
+                      className="mt-1 h-9 text-sm"
+                   />
+                 </div>
+                 <div>
+                   <Label htmlFor="contact-email" className="text-xs font-medium text-muted-foreground">Email</Label>
+                   <Input
+                     id="contact-email"
+                     type="email"
+                     value={contactEmail === "Not mentioned" ? "" : contactEmail}
+                     onChange={(e) => handleContactChange('email', e.target.value)}
+                     placeholder="Enter email..."
+                      className="mt-1 h-9 text-sm"
+                   />
+                 </div>
+               </div>
+            </CategoryCard>
             <CategoryCard
               title="Timeline"
               icon={CalendarClock}

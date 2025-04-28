@@ -8,3 +8,10 @@ export interface LineItem {
   itemName: string;
   price: number;
 }
+
+export interface ContactInformation {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+}

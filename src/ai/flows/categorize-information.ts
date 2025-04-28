@@ -4,7 +4,7 @@
  * @fileOverview This file defines a Genkit flow for categorizing transcribed text from construction job conversations.
  * It extracts information related to 'Scope of Work', 'Contact Information', 'Timeline', and 'Budget'.
  * For 'Scope of Work' and 'Timeline', it rewrites the information into professional, concise paragraphs suitable for customer communication.
- * For 'Contact Information', it formats the details and attempts to complete partial addresses.
+ * For 'Contact Information', it extracts and formats details into distinct fields and attempts to complete partial addresses.
  *
  * - categorizeInformation - A function that categorizes and potentially rewrites input text.
  * - CategorizeInformationInput - The input type for the categorizeInformation function.
@@ -21,11 +21,19 @@ const CategorizeInformationInputSchema = z.object({
 });
 export type CategorizeInformationInput = z.infer<typeof CategorizeInformationInputSchema>;
 
+const ContactInfoSchema = z.object({
+    name: z.string().describe('Extracted contact name(s). Return "Not mentioned" if none found.'),
+    address: z.string().describe('Extracted full address. Attempt to complete if partial (e.g., add city/state/zip). Return "Not mentioned" if none found.'),
+    phone: z.string().describe('Extracted phone number(s). Return "Not mentioned" if none found.'),
+    email: z.string().describe('Extracted email address(es). Return "Not mentioned" if none found.'),
+}).describe('Structured contact information extracted from the text.');
+
+
 const CategorizeInformationOutputSchema = z.object({
-  scopeOfWork: z.string().describe("A professionally rewritten, concise paragraph summarizing the project's scope of work, suitable for convincing a customer."),
-  contactInformation: z.string().describe('Formatted contact information (Name, Address, Phone, Email). Address details like zip code should be completed if possible based on context.'),
-  timeline: z.string().describe('A professionally rewritten, concise paragraph summarizing the project timeline, suitable for convincing a customer.'),
-  budget: z.string().describe('Extracted budget or cost-related information.'),
+  scopeOfWork: z.string().describe("A professionally rewritten, concise paragraph summarizing the project's scope of work, suitable for convincing a customer. Return 'Not mentioned' if no scope information found."),
+  contactInformation: ContactInfoSchema,
+  timeline: z.string().describe('A professionally rewritten, concise paragraph summarizing the project timeline, suitable for convincing a customer. Return "Not mentioned" if no timeline information found.'),
+  budget: z.string().describe('Extracted budget or cost-related information. Return "Not mentioned" if no budget information found.'),
 });
 export type CategorizeInformationOutput = z.infer<typeof CategorizeInformationOutputSchema>;
 
@@ -52,23 +60,16 @@ Analyze the following transcribed text:
 {{{transcribedText}}}
 '''
 
-Categorize the information into the following sections:
+Categorize the information into the following sections and structure the output as a JSON object matching the provided schema:
 
-1.  **Scope of Work**: Identify all details related to the project's tasks, deliverables, and objectives. Then, rewrite this information into a single, concise, professional-sounding paragraph. This paragraph should instill confidence in the customer regarding the understanding of the work required.
-2.  **Contact Information**: Extract any names, phone numbers, email addresses, company affiliations, and physical addresses mentioned. Format the extracted information clearly as follows, filling in each field only if the information is present in the text:
-    \`\`\`
-    Name: [Extracted Name(s)]
-    Address: [Extracted Address]
-    Phone: [Extracted Phone Number(s)]
-    Email: [Extracted Email Address(es)]
-    \`\`\`
-    If an address is mentioned but seems incomplete (e.g., missing city, state, or zip code), use your knowledge to try and complete it based on the available information like street name and potentially mentioned city/region. If you cannot confidently complete the address, present the information as extracted in the Address field. If no information is found for a field (Name, Address, Phone, Email), state "Not mentioned" for that specific field within the formatted structure.
-3.  **Timeline**: Identify all dates, deadlines, durations, or scheduling mentions. Then, rewrite this information into a single, concise, professional-sounding paragraph outlining the expected timeframe. This paragraph should convey efficiency and reliability to the customer.
-4.  **Budget**: Extract any cost estimates, payment terms, or financial details mentioned. List them clearly. If not mentioned, state "Not mentioned".
+1.  **scopeOfWork**: Identify all details related to the project's tasks, deliverables, and objectives. Rewrite this information into a single, concise, professional-sounding paragraph that instills customer confidence. If no scope details are found, set this field to "Not mentioned".
+2.  **contactInformation**: Extract any names, phone numbers, email addresses, company affiliations, and physical addresses mentioned. Structure this as an object with the following keys: 'name', 'address', 'phone', 'email'.
+    *   For the 'address' field: If an address is mentioned but seems incomplete (e.g., missing city, state, or zip code), use your knowledge to try and complete it based on the available information like street name and potentially mentioned city/region. If you cannot confidently complete it, provide the address as extracted.
+    *   For each key ('name', 'address', 'phone', 'email'): If the corresponding information is not found in the text, set the value for that key to "Not mentioned".
+3.  **timeline**: Identify all dates, deadlines, durations, or scheduling mentions. Rewrite this information into a single, concise, professional-sounding paragraph outlining the expected timeframe, conveying efficiency and reliability. If no timeline details are found, set this field to "Not mentioned".
+4.  **budget**: Extract any cost estimates, payment terms, or financial details mentioned. List them clearly. If no budget details are found, set this field to "Not mentioned".
 
-If information for a specific category (Scope of Work, Timeline, Budget) is not found in the text, the corresponding field in the JSON output should clearly indicate this (e.g., "Not mentioned" or an empty string). For Contact Information, follow the specific formatting instructions above.
-
-Output the results in JSON format according to the provided output schema. Ensure the 'scopeOfWork' and 'timeline' fields contain the rewritten professional paragraphs, and 'contactInformation' contains the formatted details.
+Output the results strictly in JSON format according to the provided output schema. Ensure the 'scopeOfWork' and 'timeline' fields contain the rewritten professional paragraphs, and 'contactInformation' is an object containing the extracted (and potentially completed/formatted) details or "Not mentioned" for each field.
 `,
 });
 
@@ -85,10 +86,15 @@ const categorizeInformationFlow = ai.defineFlow<
   if (!output) {
       throw new Error("AI prompt did not return the expected output.");
   }
-  // Ensure all fields exist, even if empty or "Not mentioned", to match the schema
+  // Ensure all fields exist, providing defaults based on the schema if necessary
   return {
       scopeOfWork: output.scopeOfWork || "Not mentioned",
-      contactInformation: output.contactInformation || "Name: Not mentioned\nAddress: Not mentioned\nPhone: Not mentioned\nEmail: Not mentioned", // Default formatted string
+      contactInformation: {
+          name: output.contactInformation?.name || "Not mentioned",
+          address: output.contactInformation?.address || "Not mentioned",
+          phone: output.contactInformation?.phone || "Not mentioned",
+          email: output.contactInformation?.email || "Not mentioned",
+      },
       timeline: output.timeline || "Not mentioned",
       budget: output.budget || "Not mentioned",
   };

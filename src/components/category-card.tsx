@@ -6,22 +6,41 @@ import type { LucideIcon } from 'lucide-react';
 interface CategoryCardProps {
   title: string;
   icon: LucideIcon | React.ElementType;
-  content?: React.ReactNode; // For read-only content
+  content?: React.ReactNode; // For read-only content OR custom layout when not editable
   value?: string;           // Value for editable textarea
   isEditable?: boolean;
   onChange?: (newValue: string) => void;
-  children?: React.ReactNode; // For additional content below main area (e.g., table/button)
+  children?: React.ReactNode; // For additional content below main area (e.g., table/button) OR primary content if not editable
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = ({
   title,
   icon: Icon,
-  content, // Read-only
-  value,   // Editable
+  content, // Can be used for read-only or custom layout (like inputs)
+  value,   // Editable textarea value
   isEditable = false,
   onChange,
-  children, // For table/button etc.
+  children, // Can be used for table/button OR primary content if not editable
 }) => {
+  // Determine what to render in the main content area
+  const mainContent = isEditable ? (
+     <Textarea
+       value={value ?? ''}
+       onChange={(e) => onChange?.(e.target.value)}
+       placeholder={`Enter ${title}...`}
+       className="min-h-[80px] text-sm"
+       style={{ whiteSpace: 'pre-wrap' }}
+     />
+   ) : (
+     // If not editable, prioritize children, then content prop, then default text
+     children ?? content ?? <span className="italic text-muted-foreground">No information provided.</span>
+   );
+
+   // Determine what to render below the main content (e.g., table/button)
+   // This is only used if `children` wasn't used as the main content
+   const additionalContent = !isEditable && children ? null : children; // Original children prop intent for addons
+
+
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 bg-card border border-border flex flex-col">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -29,24 +48,17 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         <Icon className="h-6 w-6 text-accent" />
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-between pt-2">
-        {/* Main content area: Editable Textarea or Read-only content */}
-        <div className="text-sm text-foreground prose prose-sm max-w-none flex-grow mb-4"> {/* Added mb-4 */}
-          {isEditable ? (
-            <Textarea
-              value={value ?? ''} // Use value prop
-              onChange={(e) => onChange?.(e.target.value)} // Call onChange prop
-              placeholder={`Enter ${title}...`}
-              className="min-h-[80px] text-sm" // Ensure consistent text size
-              style={{ whiteSpace: 'pre-wrap' }} // Maintain line breaks on edit
-            />
-          ) : (
-            // Render read-only content directly
-             content ?? <span className="italic text-muted-foreground">No information provided.</span>
-          )}
+        {/* Main content area: Editable Textarea or Custom Layout */}
+        <div className="text-sm text-foreground prose prose-sm max-w-none flex-grow mb-4">
+          {mainContent}
         </div>
 
-        {/* Render additional children (like table/button) below the main content */}
-        {children && <div className="mt-auto border-t pt-4">{children}</div>}
+        {/* Render additional content (like table/button) below the main area only if it exists */}
+         {/* If isEditable, children is always additional content */}
+         {/* If !isEditable, children might have been used for mainContent, so check the original `children` prop */}
+         {children && (isEditable || content) && (
+          <div className="mt-auto border-t pt-4">{children}</div>
+         )}
       </CardContent>
     </Card>
   );
