@@ -2,16 +2,16 @@
 // TODO: Fix TS errors and remove the Nocheck
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
 import LineItemModal from "@/components/line-item-modal";
-import LineItemTable from "@/components/line-item-table"; // Import the new component
+import LineItemTable from "@/components/line-item-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle, Pencil } from "lucide-react"; // Added Pencil
+import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle, Pencil } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
 import type { LineItem } from "@/types";
@@ -86,10 +86,13 @@ export default function Home() {
     setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]); // Use timestamp as simple ID
   };
 
-  // Function to remove a line item (optional for future use)
-  // const handleRemoveLineItem = (id: number) => {
-  //   setLineItems((prevItems) => prevItems.filter(item => item.id !== id));
-  // };
+  // Handlers for updating categorized info state from textareas
+  const handleCategoryChange = useCallback((category: keyof CategorizeInformationOutput, value: string) => {
+    setCategorizedInfo(prev => {
+      if (!prev) return null;
+      return { ...prev, [category]: value };
+    });
+  }, []);
 
   // Button to open the modal - text changes based on whether items exist
   const manageLineItemsButton = (
@@ -102,24 +105,6 @@ export default function Home() {
           {lineItems.length > 0 ? <Pencil className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
           {lineItems.length > 0 ? 'View/Edit Line Items' : 'Add Line Items'}
       </Button>
-  );
-
-  // Content for the Budget Card
-  const budgetCardContent = (
-    <>
-      {/* Display AI extracted budget text first */}
-      <p style={{ whiteSpace: 'pre-wrap' }} className="mb-4">
-        {categorizedInfo?.budget || <span className="italic text-muted-foreground">No budget information provided.</span>}
-      </p>
-
-      {/* Display LineItemTable if items exist */}
-      {lineItems.length > 0 && (
-         <div className="mt-4 border-t pt-4">
-             <h4 className="text-sm font-medium mb-2 text-primary">Line Items:</h4>
-            <LineItemTable lineItems={lineItems} />
-         </div>
-      )}
-    </>
   );
 
 
@@ -158,16 +143,14 @@ export default function Home() {
             <CategoryCard
               title="Scope of Work"
               icon={ClipboardList}
-              content={
-                 <p style={{ whiteSpace: 'pre-wrap' }}>
-                   {categorizedInfo.scopeOfWork || <span className="italic text-muted-foreground">No information provided.</span>}
-                 </p>
-              }
+              isEditable
+              value={categorizedInfo.scopeOfWork}
+              onChange={(value) => handleCategoryChange('scopeOfWork', value)}
             />
             <CategoryCard
               title="Contact Information"
               icon={User}
-               content={
+              content={ // Contact info remains read-only
                  <p style={{ whiteSpace: 'pre-wrap' }}>
                    {categorizedInfo.contactInformation || <span className="italic text-muted-foreground">No information provided.</span>}
                  </p>
@@ -176,18 +159,26 @@ export default function Home() {
             <CategoryCard
               title="Timeline"
               icon={CalendarClock}
-               content={
-                 <p style={{ whiteSpace: 'pre-wrap' }}>
-                   {categorizedInfo.timeline || <span className="italic text-muted-foreground">No information provided.</span>}
-                 </p>
-              }
+              isEditable
+              value={categorizedInfo.timeline}
+              onChange={(value) => handleCategoryChange('timeline', value)}
             />
             <CategoryCard
               title="Budget"
               icon={DollarSign}
-              content={budgetCardContent} // Use the constructed content
-              actionButton={manageLineItemsButton} // Pass the button here
-            />
+              isEditable
+              value={categorizedInfo.budget}
+              onChange={(value) => handleCategoryChange('budget', value)}
+            >
+              {/* Additional content for Budget card (Table and Button) passed as children */}
+              {lineItems.length > 0 && (
+                 <div className="mt-4"> {/* No top border needed here as CategoryCard adds one */}
+                     <h4 className="text-sm font-medium mb-2 text-primary">Line Items:</h4>
+                    <LineItemTable lineItems={lineItems} />
+                 </div>
+              )}
+               <div className="mt-4">{manageLineItemsButton}</div>
+            </CategoryCard>
           </div>
         )}
 
