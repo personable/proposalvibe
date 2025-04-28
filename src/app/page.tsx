@@ -9,16 +9,18 @@ import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
 import LineItemModal from "@/components/line-item-modal";
+import ImageDetailModal from "@/components/image-detail-modal"; // Import the new modal
 import LineItemTable from "@/components/line-item-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea for description snippet logic
 import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle, Pencil, Upload, X } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
-import type { LineItem } from "@/types";
+import type { LineItem, ImageDetail } from "@/types"; // Import ImageDetail type
 import { cn } from "@/lib/utils";
 
 
@@ -29,9 +31,11 @@ export default function Home() {
   const [categorizedInfo, setCategorizedInfo] = useState<CategorizeInformationOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLineItemModalOpen, setIsLineItemModalOpen] = useState(false);
+  const [isImageDetailModalOpen, setIsImageDetailModalOpen] = useState(false); // State for image detail modal
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null); // State for selected image index
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [scopeImages, setScopeImages] = useState<string[]>([]); // State for image data URIs
+  const [scopeImages, setScopeImages] = useState<ImageDetail[]>([]); // State now holds ImageDetail objects
 
   // State for individual contact fields
   const [contactName, setContactName] = useState('');
@@ -66,7 +70,9 @@ export default function Home() {
     setCategorizedInfo(null); // Clear previous categories
     setLineItems([]); // Clear previous line items
     setScopeImages([]); // Clear previous images
-    setIsModalOpen(false); // Ensure modal is closed
+    setIsLineItemModalOpen(false); // Ensure line item modal is closed
+    setIsImageDetailModalOpen(false); // Ensure image detail modal is closed
+    setSelectedImageIndex(null); // Clear selected image
     // Clear contact fields
     setContactName('');
     setContactAddress('');
@@ -180,7 +186,12 @@ export default function Home() {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
-          setScopeImages(prev => [...prev, reader.result as string]);
+          const newImage: ImageDetail = {
+            id: Date.now() + Math.random(), // Simple unique ID
+            src: reader.result as string,
+            description: '', // Initialize with empty description
+          };
+          setScopeImages(prev => [...prev, newImage]);
         }
       };
       reader.onerror = () => {
@@ -198,9 +209,32 @@ export default function Home() {
     event.target.value = '';
   };
 
-  // Handler to remove an image
-  const removeImage = (index: number) => {
-    setScopeImages(prev => prev.filter((_, i) => i !== index));
+  // Handler to remove an image by ID
+  const removeImage = (idToRemove: number) => {
+    setScopeImages(prev => prev.filter((image) => image.id !== idToRemove));
+  };
+
+  // Handler to open the image detail modal
+  const openImageModal = (index: number) => {
+    setSelectedImageIndex(index);
+    setIsImageDetailModalOpen(true);
+  };
+
+  // Handler to save description from the modal
+  const handleSaveImageDescription = (index: number, newDescription: string) => {
+    setScopeImages(prev =>
+      prev.map((img, i) =>
+        i === index ? { ...img, description: newDescription } : img
+      )
+    );
+    setIsImageDetailModalOpen(false); // Close modal after save
+    setSelectedImageIndex(null);
+  };
+
+  // Function to get the first line of a description
+  const getFirstLine = (text: string): string => {
+    if (!text) return '';
+    return text.split('\n')[0];
   };
 
 
@@ -210,12 +244,14 @@ export default function Home() {
           variant="outline"
           size="sm"
           className="mt-4 text-accent hover:text-accent-foreground hover:bg-accent/10 border-accent/50"
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => setIsLineItemModalOpen(true)}
         >
           {lineItems.length > 0 ? <Pencil className="mr-2 h-4 w-4" /> : <PlusCircle className="mr-2 h-4 w-4" />}
           {lineItems.length > 0 ? 'View/Edit Line Items' : 'Add Line Items'}
       </Button>
   );
+
+  const selectedImageData = selectedImageIndex !== null ? scopeImages[selectedImageIndex] : null;
 
 
   return (
@@ -326,25 +362,41 @@ export default function Home() {
                   disabled={scopeImages.length >= MAX_IMAGES}
                 />
                 {scopeImages.length > 0 && (
-                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {scopeImages.map((imgSrc, index) => (
-                      <div key={index} className="relative group aspect-square">
-                        <Image
-                          src={imgSrc}
-                          alt={`Scope image ${index + 1}`}
-                          width={100}
-                          height={100}
-                          className="object-cover w-full h-full rounded-md border"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-0.5"
-                          onClick={() => removeImage(index)}
-                          aria-label={`Remove image ${index + 1}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
+                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                    {scopeImages.map((image, index) => (
+                      <div key={image.id} className="relative group flex flex-col items-center">
+                         <button
+                            onClick={() => openImageModal(index)}
+                            className="block aspect-square w-full overflow-hidden rounded-md border focus:outline-none focus:ring-2 focus:ring-accent"
+                            aria-label={`View image ${index + 1} details`}
+                          >
+                            <Image
+                              src={image.src}
+                              alt={`Scope image ${index + 1}`}
+                              width={100}
+                              height={100}
+                              className="object-cover w-full h-full transition-transform group-hover:scale-105"
+                              />
+                          </button>
+                          {/* Close button */}
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-0.5 z-10"
+                            onClick={(e) => {
+                                e.stopPropagation(); // Prevent opening modal when clicking delete
+                                removeImage(image.id);
+                            }}
+                            aria-label={`Remove image ${index + 1}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          {/* Description Snippet */}
+                         {image.description && (
+                           <p className="mt-1 text-xs text-muted-foreground text-center truncate w-full px-1" title={getFirstLine(image.description)}>
+                              {getFirstLine(image.description)}
+                            </p>
+                         )}
                       </div>
                     ))}
                   </div>
@@ -384,12 +436,25 @@ export default function Home() {
         )}
 
       <LineItemModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        isOpen={isLineItemModalOpen}
+        onOpenChange={setIsLineItemModalOpen}
         lineItems={lineItems}
         onAddLineItem={handleAddLineItem}
         // onRemoveLineItem={handleRemoveLineItem} // Pass remove function if implemented
       />
+
+      {selectedImageData && (
+        <ImageDetailModal
+          isOpen={isImageDetailModalOpen}
+          onOpenChange={setIsImageDetailModalOpen}
+          image={selectedImageData}
+          onSaveDescription={(desc) => {
+            if (selectedImageIndex !== null) {
+              handleSaveImageDescription(selectedImageIndex, desc);
+            }
+          }}
+        />
+      )}
     </main>
   );
 }

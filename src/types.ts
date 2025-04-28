@@ -15,3 +15,9 @@ export interface ContactInformation {
     phone: string;
     email: string;
 }
+
+export interface ImageDetail {
+  id: number; // Simple ID for React keys
+  src: string; // Data URI of the image
+  description: string; // User-added description
+}
