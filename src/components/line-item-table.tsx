@@ -27,10 +27,7 @@ const LineItemTable: React.FC<LineItemTableProps> = ({ lineItems }) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[80px] px-2 py-1 h-8">Qty</TableHead> {/* Compact header */}
-              <TableHead className="px-2 py-1 h-8">Item Name</TableHead>
-              <TableHead className="w-[80px] text-right px-2 py-1 h-8">Price</TableHead>
-              <TableHead className="w-[90px] text-right px-2 py-1 h-8">Total</TableHead>
+              <TableHead className="w-[80px] px-2 py-1 h-8">Qty</TableHead><TableHead className="px-2 py-1 h-8">Item Name</TableHead><TableHead className="w-[80px] text-right px-2 py-1 h-8">Price</TableHead><TableHead className="w-[90px] text-right px-2 py-1 h-8">Total</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -43,10 +40,7 @@ const LineItemTable: React.FC<LineItemTableProps> = ({ lineItems }) => {
             )}
             {lineItems.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium px-2 py-1">{item.quantity}</TableCell> {/* Compact cell */}
-                <TableCell className="px-2 py-1">{item.itemName}</TableCell>
-                <TableCell className="text-right px-2 py-1">${item.price.toFixed(2)}</TableCell>
-                <TableCell className="text-right font-medium px-2 py-1">${(item.quantity * item.price).toFixed(2)}</TableCell>
+                <TableCell className="font-medium px-2 py-1">{item.quantity}</TableCell><TableCell className="px-2 py-1">{item.itemName}</TableCell><TableCell className="text-right px-2 py-1">${item.price.toFixed(2)}</TableCell><TableCell className="text-right font-medium px-2 py-1">${(item.quantity * item.price).toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
