@@ -1,8 +1,10 @@
+
 // @ts-nocheck
 // TODO: Fix TS errors and remove the Nocheck
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
+import Image from 'next/image'; // Import next/image
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
@@ -11,13 +13,16 @@ import LineItemTable from "@/components/line-item-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Import Input
-import { Label } from "@/components/ui/label"; // Import Label
-import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle, Pencil } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle, Pencil, Upload, X } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
 import type { LineItem } from "@/types";
+import { cn } from "@/lib/utils";
 
+
+const MAX_IMAGES = 5;
 
 export default function Home() {
   const [transcribedText, setTranscribedText] = useState<string | null>(null);
@@ -26,6 +31,7 @@ export default function Home() {
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [scopeImages, setScopeImages] = useState<string[]>([]); // State for image data URIs
 
   // State for individual contact fields
   const [contactName, setContactName] = useState('');
@@ -59,6 +65,7 @@ export default function Home() {
     setTranscribedText(null); // Clear previous transcription
     setCategorizedInfo(null); // Clear previous categories
     setLineItems([]); // Clear previous line items
+    setScopeImages([]); // Clear previous images
     setIsModalOpen(false); // Ensure modal is closed
     // Clear contact fields
     setContactName('');
@@ -144,6 +151,57 @@ export default function Home() {
           };
       });
   }, []);
+
+  // Handler for image selection
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const currentImageCount = scopeImages.length;
+    const filesToProcess = Array.from(files).slice(0, MAX_IMAGES - currentImageCount);
+
+    if (files.length + currentImageCount > MAX_IMAGES) {
+      toast({
+        title: "Image Limit Exceeded",
+        description: `You can only attach up to ${MAX_IMAGES} images.`,
+        variant: "destructive",
+      });
+    }
+
+    filesToProcess.forEach(file => {
+      if (!file.type.startsWith('image/')) {
+         toast({
+            title: "Invalid File Type",
+            description: `File "${file.name}" is not an image.`,
+            variant: "destructive",
+         });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === 'string') {
+          setScopeImages(prev => [...prev, reader.result as string]);
+        }
+      };
+      reader.onerror = () => {
+        console.error("Error reading file:", file.name);
+         toast({
+            title: "File Read Error",
+            description: `Could not read file "${file.name}".`,
+            variant: "destructive",
+         });
+      }
+      reader.readAsDataURL(file);
+    });
+
+    // Reset file input value to allow selecting the same file again
+    event.target.value = '';
+  };
+
+  // Handler to remove an image
+  const removeImage = (index: number) => {
+    setScopeImages(prev => prev.filter((_, i) => i !== index));
+  };
 
 
   // Button to open the modal - text changes based on whether items exist
@@ -248,7 +306,51 @@ export default function Home() {
              isEditable
              value={categorizedInfo.scopeOfWork}
              onChange={(value) => handleCategoryChange('scopeOfWork', value)}
-           />
+           >
+              {/* Image Upload and Display Area */}
+             <div className="mt-4 border-t pt-4">
+                <Label htmlFor="scope-image-input" className={cn(
+                  "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer",
+                  scopeImages.length >= MAX_IMAGES && "opacity-50 cursor-not-allowed"
+                )}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Attach Images ({scopeImages.length}/{MAX_IMAGES})
+                </Label>
+                <Input
+                  id="scope-image-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                  className="sr-only" // Hide the default input appearance
+                  disabled={scopeImages.length >= MAX_IMAGES}
+                />
+                {scopeImages.length > 0 && (
+                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    {scopeImages.map((imgSrc, index) => (
+                      <div key={index} className="relative group aspect-square">
+                        <Image
+                          src={imgSrc}
+                          alt={`Scope image ${index + 1}`}
+                          width={100}
+                          height={100}
+                          className="object-cover w-full h-full rounded-md border"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-0.5"
+                          onClick={() => removeImage(index)}
+                          aria-label={`Remove image ${index + 1}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+             </div>
+           </CategoryCard>
             <CategoryCard
               title="Timeline"
               icon={CalendarClock}
