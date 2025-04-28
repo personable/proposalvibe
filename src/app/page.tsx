@@ -306,18 +306,20 @@ export default function Home() {
           !transcribedText &&
           !categorizedInfo && (
             <>
-              <p className="text-foreground text-3xl font-bold mb-8">
+              <p className="text-muted-foreground text-lg text-center border-2 opacity-80 border-dashed p-8 rounded-md mb-4">
+                We're doing this job for Jennifer LaRue at 123 Main St,
+                Portland, OR 97201. The scope of work includes replacing the
+                roof and installing new gutters. The timeline is about two
+                weeks, and the budget is ten thousand, with one thousand down
+                today. You can reach her at (555) 123-4567 or jlarue at gmail.
+              </p>
+              {/* <p className="text-foreground text-3xl font-bold mb-8">
                 Speak normally and walk us through the&hellip;
               </p>
-              <ul className="text-xl ml-4 pl-4 list-disc">
-                <li className="mb-2">📇 Customer Contact Info</li>
-                <li className="mb-2">🗒️ Scope of Work</li>
-                <li className="mb-2">🕚 Timeline</li>
-                <li className="mb-2">💰 Budget</li>
-              </ul>
+
               <p className="text-foreground text-3xl font-bold mt-8">
                 &hellip;for this job.
-              </p>
+              </p> */}
             </>
           )}
         {transcribedText && (
@@ -522,19 +524,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="bg-background border-t border-t-muted-foreground/10 p-4 relative">
-        {!isLoading &&
-          !isCategorizing &&
-          !transcribedText &&
-          !categorizedInfo && (
-            <p className="text-center text-muted-foreground bg-muted text-sm p-4 rounded-md mb-4">
-              Example: "We're doing this job for Jennifer LaRue at 123 Main St,
-              Portland, OR 97201. The scope of work includes replacing the roof
-              and installing new gutters. The timeline is about two weeks, and
-              the budget is ten thousand, with one thousand down today. You can
-              reach her at (555) 123-4567 or jlarue at gmail."
-            </p>
-          )}
+      <footer className="bg-background border-t 0 pt-6 relative">
         <AudioRecorder
           onRecordingComplete={handleRecordingComplete}
           isProcessing={isLoading || isCategorizing}
