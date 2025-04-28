@@ -1,0 +1,10 @@
+/**
+ * @fileOverview Defines shared TypeScript types used across the application.
+ */
+
+export interface LineItem {
+  id: number; // Simple ID for React keys, consider using UUID in a real app
+  quantity: number;
+  itemName: string;
+  price: number;
+}

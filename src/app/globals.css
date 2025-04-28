@@ -20,13 +20,13 @@ body {
     --secondary-foreground: 210 40% 9%; /* Dark Blue-Gray */
     --muted: 240 4.8% 95.9%; /* Light Gray */
     --muted-foreground: 240 3.8% 46.1%; /* Medium Gray */
-    --accent: 180 100% 25.1%; /* Teal */
-    --accent-foreground: 180 100% 95%; /* Light Teal/White */
+    --accent: 211 91% 43%; /* Updated to #0967d2 */
+    --accent-foreground: 210 40% 98%; /* Very Light Blue/White - Adjusted for contrast */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%; /* Lighter Gray */
     --input: 240 5.9% 90%; /* Lighter Gray */
-    --ring: 180 100% 25.1%; /* Teal */
+    --ring: 211 91% 43%; /* Updated to #0967d2 */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -35,12 +35,12 @@ body {
     --radius: 0.5rem;
     --sidebar-background: 240 4.8% 95.9%;
     --sidebar-foreground: 240 5.9% 10%;
-    --sidebar-primary: 180 100% 25.1%; /* Teal */
-    --sidebar-primary-foreground: 180 100% 95%;
+    --sidebar-primary: 211 91% 43%; /* Updated to #0967d2 */
+    --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 210 40% 96.1%; /* Light Blue */
     --sidebar-accent-foreground: 210 40% 9%;
     --sidebar-border: 240 5.9% 90%;
-    --sidebar-ring: 180 100% 25.1%;
+    --sidebar-ring: 211 91% 43%; /* Updated to #0967d2 */
   }
   .dark {
     --background: 240 5.9% 10%; /* Dark Gray */
@@ -55,13 +55,13 @@ body {
     --secondary-foreground: 210 40% 98%; /* Very Light Blue */
     --muted: 240 3.7% 15.9%; /* Darker Gray */
     --muted-foreground: 240 5% 64.9%; /* Lighter Gray */
-    --accent: 180 100% 35%; /* Brighter Teal */
-    --accent-foreground: 180 100% 95%; /* Light Teal/White */
+    --accent: 211 85% 55%; /* Brighter #0967d2 */
+    --accent-foreground: 210 40% 98%; /* Very Light Blue/White */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%; /* Darker Gray */
     --input: 240 3.7% 15.9%; /* Darker Gray */
-    --ring: 180 100% 35%; /* Brighter Teal */
+    --ring: 211 85% 55%; /* Brighter #0967d2 */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -69,12 +69,12 @@ body {
     --chart-5: 340 75% 55%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 180 100% 35%; /* Brighter Teal */
-    --sidebar-primary-foreground: 180 100% 95%;
+    --sidebar-primary: 211 85% 55%; /* Brighter #0967d2 */
+    --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 210 40% 14.9%; /* Dark Blue */
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 180 100% 35%;
+    --sidebar-ring: 211 85% 55%; /* Brighter #0967d2 */
   }
 }
 

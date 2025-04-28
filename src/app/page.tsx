@@ -6,17 +6,23 @@ import React, { useState } from "react";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
+import LineItemModal from "@/components/line-item-modal";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClipboardList, User, CalendarClock, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ClipboardList, User, CalendarClock, DollarSign, PlusCircle } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
+import type { LineItem } from "@/types";
+
 
 export default function Home() {
   const [transcribedText, setTranscribedText] = useState<string | null>(null);
   const [categorizedInfo, setCategorizedInfo] = useState<CategorizeInformationOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const { toast } = useToast();
 
   const handleRecordingComplete = async (audioDataUri: string) => {
@@ -31,6 +37,8 @@ export default function Home() {
     setIsLoading(true);
     setTranscribedText(null); // Clear previous transcription
     setCategorizedInfo(null); // Clear previous categories
+    setLineItems([]); // Clear previous line items
+    setIsModalOpen(false); // Ensure modal is closed
 
     try {
       // 1. Transcribe Audio
@@ -71,6 +79,22 @@ export default function Home() {
       <Skeleton className="h-32 rounded-lg" />
       <Skeleton className="h-32 rounded-lg" />
     </div>
+  );
+
+  const handleAddLineItem = (newItem: Omit<LineItem, 'id'>) => {
+    setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]); // Use timestamp as simple ID
+  };
+
+  const addLineItemButton = (
+      <Button
+          variant="outline"
+          size="sm"
+          className="mt-4 text-accent hover:text-accent-foreground hover:bg-accent/10 border-accent/50"
+          onClick={() => setIsModalOpen(true)}
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add Line Items
+      </Button>
   );
 
 
@@ -125,6 +149,7 @@ export default function Home() {
               title="Budget"
               icon={DollarSign}
               content={categorizedInfo.budget}
+              actionButton={addLineItemButton} // Pass the button here
             />
           </div>
         )}
@@ -134,6 +159,13 @@ export default function Home() {
                 <p>Click the microphone button to start recording job details.</p>
             </div>
         )}
+
+      <LineItemModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        lineItems={lineItems}
+        onAddLineItem={handleAddLineItem}
+      />
     </main>
   );
 }

@@ -207,7 +207,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         className={`w-24 h-24 rounded-full shadow-lg transition-transform transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed text-accent-foreground ${
           isRecording
             ? "bg-gradient-to-br from-red-500 to-red-700 hover:from-red-500/90 hover:to-red-700/90"
-            : "bg-gradient-to-br from-accent to-teal-600 hover:from-accent/90 hover:to-teal-600/90"
+             : "bg-gradient-to-br from-accent to-blue-700 hover:from-accent/90 hover:to-blue-700/90" // Adjusted end color for gradient
         }`}
         aria-label={isRecording ? "Stop Recording" : "Start Recording"}
       >
