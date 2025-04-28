@@ -51,7 +51,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         <CardTitle className="text-lg font-semibold text-primary">
           {title}
         </CardTitle>
-        <Icon className="h-6 w-6 text-accent" />
+        <Icon className="h-6 w-6" />
       </CardHeader>
       <CardContent className="flex-grow flex flex-col justify-between pt-2">
         {/* Main content area: Editable Textarea or Custom Layout */}

@@ -306,7 +306,11 @@ export default function Home() {
           !transcribedText &&
           !categorizedInfo && (
             <>
-              <p className="text-muted-foreground text-lg text-center border-2 opacity-80 border-dashed p-8 rounded-md mb-4">
+              <h1 className="text-4xl font-bold mb-6 text-center">
+                Talk naturally about this job
+                <span className="block mt-6">👇</span>
+              </h1>
+              <p className="italic text-muted-foreground bg-muted text-s text-center opacity-80 p-6 rounded-2xl mb-4">
                 We're doing this job for Jennifer LaRue at 123 Main St,
                 Portland, OR 97201. The scope of work includes replacing the
                 roof and installing new gutters. The timeline is about two
@@ -524,7 +528,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="bg-background border-t 0 pt-6 relative">
+      <footer className="bg-background border-t 0 pt-6 relative mt-8">
         <AudioRecorder
           onRecordingComplete={handleRecordingComplete}
           isProcessing={isLoading || isCategorizing}
