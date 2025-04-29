@@ -135,10 +135,10 @@ export default function Home() {
 
   const renderSkeleton = () => (
     <div className="space-y-6 mt-8">
-      <Skeleton className="rounded-lg" />
-      <Skeleton className="rounded-lg" />
-      <Skeleton className="rounded-lg" />
-      <Skeleton className="rounded-lg" />
+      <Skeleton className="rounded-lg h-100 border" />
+      <Skeleton className="rounded-lg h-100 border" />
+      <Skeleton className="rounded-lg h-100 border" />
+      <Skeleton className="rounded-lg h-100 border" />
     </div>
   );
 
@@ -306,24 +306,25 @@ export default function Home() {
           !transcribedText &&
           !categorizedInfo && (
             <>
-              <h1 className="text-4xl font-bold mb-6 text-center">
-                Talk naturally about this job
-                <span className="block mt-6">👇</span>
+              <h1 className="text-2xl mb-10 text-center">
+                Talk naturally about your job's{" "}
+                <span className="bg-yellow-300 font-bold">
+                  Customer Contact Information
+                </span>
+                , <span className="bg-yellow-300 font-bold">Scope of Work</span>
+                , <span className="bg-yellow-300 font-bold">Timeline</span>, and{" "}
+                <span className="bg-yellow-300 font-bold">Budget</span>.
               </h1>
+              <p className="text-center text-xs mb-6 text-muted-foreground">
+                Just like this! 👇
+              </p>
               <p className="italic text-muted-foreground bg-muted text-s text-center opacity-80 p-6 rounded-2xl mb-4">
                 We're doing this job for Jennifer LaRue at 123 Main St,
-                Portland, OR 97201. The scope of work includes replacing the
-                roof and installing new gutters. The timeline is about two
-                weeks, and the budget is ten thousand, with one thousand down
+                Portland, OR 97201. Work includes replacing the roof and
+                installing new gutters. The timeline's about two weeks, and the
+                cost is going to be around ten thousand, with one thousand down
                 today. You can reach her at (555) 123-4567 or jlarue at gmail.
               </p>
-              {/* <p className="text-foreground text-3xl font-bold mb-8">
-                Speak normally and walk us through the&hellip;
-              </p>
-
-              <p className="text-foreground text-3xl font-bold mt-8">
-                &hellip;for this job.
-              </p> */}
             </>
           )}
         {transcribedText && (
@@ -342,7 +343,7 @@ export default function Home() {
         )}
 
         {isLoading && !transcribedText && renderSkeleton()}
-        {isCategorizing && <span>Finalizing&hellip;</span>}
+        {isCategorizing && renderSkeleton()}
 
         {!isLoading && !isCategorizing && categorizedInfo && (
           <div className="space-y-6 mt-8">
