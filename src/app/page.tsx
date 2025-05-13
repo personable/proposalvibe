@@ -1,7 +1,3 @@
-// @ts-nocheck
-// TODO: Fix TS errors and remove the Nocheck
-"use client";
-
 import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
@@ -27,6 +23,8 @@ import {
   RotateCcw,
   Upload,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
@@ -35,19 +33,40 @@ import { cn } from "@/lib/utils";
 
 const MAX_IMAGES = 5;
 
+const EXAMPLE_CARDS = [
+  {
+    title: "Contact Info",
+    content: "We're doing this work for Jane Stevens at 12 Main Street in Portland, Maine, 04103. Her email is j-stevens1986 at hotmail. Her number is 555-555-5555.",
+    icon: "🏠"
+  },
+  {
+    title: "Scope of Work",
+    content: "We're installing 10 Richards Windows to code. Removing old window weights and stuffing the cavities. We're going to wrap exterior casings with custom-fit aluminum. Clean-up and disposal of old windows.",
+    icon: "🔨"
+  },
+  {
+    title: "Timeline",
+    content: "This work should take about three days. If the weather is bad, we'll have to pause, and it'll take longer.",
+    icon: "📅"
+  },
+  {
+    title: "Budget & Payment",
+    content: "Total cost is going to be around five-thousand, and we're going to need twenty-five hundred down to start the work.",
+    icon: "💰"
+  }
+];
+
 export default function Home() {
   const [transcribedText, setTranscribedText] = useState<string | null>(null);
-  const [categorizedInfo, setCategorizedInfo] =
-    useState<CategorizeInformationOutput | null>(null);
+  const [categorizedInfo, setCategorizedInfo] = useState<CategorizeInformationOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [isLineItemModalOpen, setIsLineItemModalOpen] = useState(false);
   const [isImageDetailModalOpen, setIsImageDetailModalOpen] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
-    null
-  );
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [scopeImages, setScopeImages] = useState<ImageDetail[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
 
   const [contactName, setContactName] = useState("");
   const [contactAddress, setContactAddress] = useState("");
@@ -130,6 +149,14 @@ export default function Home() {
       setIsLoading(false);
       setIsCategorizing(false);
     }
+  };
+
+  const handleNextCard = () => {
+    setCurrentCardIndex((prev) => (prev + 1) % EXAMPLE_CARDS.length);
+  };
+
+  const handlePrevCard = () => {
+    setCurrentCardIndex((prev) => (prev - 1 + EXAMPLE_CARDS.length) % EXAMPLE_CARDS.length);
   };
 
   const renderSkeleton = () => (
@@ -293,55 +320,70 @@ export default function Home() {
                 Tap the 🎙️ and talk about the topics on each of the cards &hellip;
               </h1>
 
-              <div className="relative w-full overflow-hidden">
-                <div className="flex overflow-x-auto snap-x snap-mandatory bg-muted gap-4 py-8 px-8 -mx-4">
-                  {[
-                    {
-                      title: "Contact Info",
-                      content: "We're doing this work for Jane Stevens at 12 Main Street in Portland, Maine, 04103. Her email is j-stevens1986 at hotmail. Her number is 555-555-5555.",
-                      icon: "🏠"
-                    },
-                    {
-                      title: "Scope of Work",
-                      content: "We're installing 10 Richards Windows to code. Removing old window weights and stuffing the cavities. We're going to wrap exterior casings with custom-fit aluminum. Clean-up and disposal of old windows.",
-                      icon: "🔨"
-                    },
-                    {
-                      title: "Timeline",
-                      content: "This work should take about three days. If the weather is bad, we'll have to pause, and it'll take longer.",
-                      icon: "📅"
-                    },
-                    {
-                      title: "Budget & Payment",
-                      content: "Total cost is going to be around five-thousand, and we're going to need twenty-five hundred down to start the work.",
-                      icon: "💰"
-                    }
-                  ].map((card, index) => (
+              <div className="relative w-full overflow-hidden px-4">
+                <div className="relative flex justify-center items-center">
+                  <button
+                    onClick={handlePrevCard}
+                    className="absolute left-0 z-10 p-2 bg-white/80 rounded-full shadow-lg"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  
+                  <div className="w-[320px] relative">
+                    {EXAMPLE_CARDS.map((card, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "absolute top-0 w-full transition-all duration-300 transform",
+                          index === currentCardIndex
+                            ? "relative z-20 opacity-100 translate-x-0"
+                            : index === (currentCardIndex + 1) % EXAMPLE_CARDS.length
+                            ? "opacity-50 translate-x-[90%]"
+                            : "opacity-0 pointer-events-none translate-x-full"
+                        )}
+                      >
+                        <Card className="h-[300px] bg-white shadow-lg">
+                          <CardHeader>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl">{card.icon}</span>
+                              <CardTitle>{card.title}</CardTitle>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-muted-foreground text-m leading-relaxed">
+                              Example: &#8220;{card.content}&#8221;
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleNextCard}
+                    className="absolute right-0 z-10 p-2 bg-white/80 rounded-full shadow-lg"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="flex justify-center gap-1 mt-4">
+                  {EXAMPLE_CARDS.map((_, index) => (
                     <div
                       key={index}
-                      className="flex-none w-[320px] snap-center first:ml-4 last:mr-4"
-                    >
-                      <Card className="h-[300px] bg-white shadow-lg">
-                        <CardHeader>
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{card.icon}</span>
-                            <CardTitle>{card.title}</CardTitle>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground text-m leading-relaxed">
-                            Example: &#8220;{card.content}&#8221;
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </div>
+                      className={cn(
+                        "w-2 h-2 rounded-full transition-colors",
+                        index === currentCardIndex
+                          ? "bg-foreground"
+                          : "bg-muted"
+                      )}
+                    />
                   ))}
                 </div>
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
               </div>
             </>
           )}
+
         {transcribedText && (
           <Card className="mt-8 mb-6 shadow-sm bg-secondary border-secondary-foreground/10 sr-only">
             <CardHeader>
