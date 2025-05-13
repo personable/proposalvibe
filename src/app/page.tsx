@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
