@@ -3,19 +3,19 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from "react";
-import Image from "next/image"; // Import next/image
+import Image from "next/image";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
 import LineItemModal from "@/components/line-item-modal";
-import ImageDetailModal from "@/components/image-detail-modal"; // Import the new modal
+import ImageDetailModal from "@/components/image-detail-modal";
 import LineItemTable from "@/components/line-item-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea for description snippet logic
+import { Textarea } from "@/components/ui/textarea";
 import {
   ClipboardList,
   Check,
@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
-import type { LineItem, ImageDetail } from "@/types"; // Import ImageDetail type
+import type { LineItem, ImageDetail } from "@/types";
 import { cn } from "@/lib/utils";
 
 const MAX_IMAGES = 5;
@@ -42,14 +42,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [isLineItemModalOpen, setIsLineItemModalOpen] = useState(false);
-  const [isImageDetailModalOpen, setIsImageDetailModalOpen] = useState(false); // State for image detail modal
+  const [isImageDetailModalOpen, setIsImageDetailModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
     null
-  ); // State for selected image index
+  );
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [scopeImages, setScopeImages] = useState<ImageDetail[]>([]); // State now holds ImageDetail objects
+  const [scopeImages, setScopeImages] = useState<ImageDetail[]>([]);
 
-  // State for individual contact fields
   const [contactName, setContactName] = useState("");
   const [contactAddress, setContactAddress] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -57,7 +56,6 @@ export default function Home() {
 
   const { toast } = useToast();
 
-  // Effect to update contact input fields when categorizedInfo changes
   useEffect(() => {
     if (categorizedInfo?.contactInformation) {
       setContactName(categorizedInfo.contactInformation.name || "");
@@ -66,6 +64,22 @@ export default function Home() {
       setContactEmail(categorizedInfo.contactInformation.email || "");
     }
   }, [categorizedInfo]);
+
+  const handleCreateDocument = () => {
+    if (!categorizedInfo) return;
+    
+    const params = new URLSearchParams({
+      scope: categorizedInfo.scopeOfWork,
+      name: categorizedInfo.contactInformation.name,
+      address: categorizedInfo.contactInformation.address,
+      phone: categorizedInfo.contactInformation.phone,
+      email: categorizedInfo.contactInformation.email,
+      timeline: categorizedInfo.timeline,
+      budget: categorizedInfo.budget
+    });
+
+    window.location.href = `/document?${params.toString()}`;
+  };
 
   const handleRecordingComplete = async (audioDataUri: string) => {
     if (!audioDataUri) {
@@ -77,46 +91,29 @@ export default function Home() {
       return;
     }
     setIsLoading(true);
-    setTranscribedText(null); // Clear previous transcription
-    setCategorizedInfo(null); // Clear previous categories
-    setLineItems([]); // Clear previous line items
-    setScopeImages([]); // Clear previous images
-    setIsLineItemModalOpen(false); // Ensure line item modal is closed
-    setIsImageDetailModalOpen(false); // Ensure image detail modal is closed
-    setSelectedImageIndex(null); // Clear selected image
-    // Clear contact fields
+    setTranscribedText(null);
+    setCategorizedInfo(null);
+    setLineItems([]);
+    setScopeImages([]);
+    setIsLineItemModalOpen(false);
+    setIsImageDetailModalOpen(false);
+    setSelectedImageIndex(null);
     setContactName("");
     setContactAddress("");
     setContactPhone("");
     setContactEmail("");
 
     try {
-      // 1. Transcribe Audio
-      // toast({
-      //   title: "Transcribing Audio",
-      //   description: "Let's take a look at this job of yours...",
-      // });
       const transcriptionResult = await transcribeAudioAction({ audioDataUri });
       if (transcriptionResult && transcriptionResult.transcription) {
         setTranscribedText(transcriptionResult.transcription);
-        // toast({
-        //   title: "Extracting Job Details",
-        //   description:
-        //     "OK, let's sort this stuff out and turn it into a proposal.",
-        // });
-        setIsLoading(false); // Stop loading after transcription
-        setIsCategorizing(true); // Start categorizing indicator
+        setIsLoading(false);
+        setIsCategorizing(true);
 
-        // 2. Categorize Information
         const categorizationResult = await categorizeInformationAction({
           transcribedText: transcriptionResult.transcription,
         });
         setCategorizedInfo(categorizationResult);
-
-        // toast({
-        //   title: "Categorization Complete!",
-        //   description: "Job details sorted.",
-        // });
       } else {
         throw new Error("Transcription failed or returned empty.");
       }
@@ -142,15 +139,13 @@ export default function Home() {
   );
 
   const handleAddLineItem = (newItem: Omit<LineItem, "id">) => {
-    setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]); // Use timestamp as simple ID
+    setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]);
   };
 
-  // Generic handler for Scope, Timeline, Budget textareas
   const handleCategoryChange = useCallback(
     (category: keyof CategorizeInformationOutput, value: string) => {
       setCategorizedInfo((prev) => {
         if (!prev) return null;
-        // Exclude contactInformation from this handler
         if (category === "contactInformation") return prev;
         return { ...prev, [category]: value };
       });
@@ -158,19 +153,16 @@ export default function Home() {
     []
   );
 
-  // Specific handler for Contact Information inputs
   const handleContactChange = useCallback(
     (
       field: keyof CategorizeInformationOutput["contactInformation"],
       value: string
     ) => {
-      // Update the specific input field's state
       if (field === "name") setContactName(value);
       else if (field === "address") setContactAddress(value);
       else if (field === "phone") setContactPhone(value);
       else if (field === "email") setContactEmail(value);
 
-      // Update the main categorizedInfo state
       setCategorizedInfo((prev) => {
         if (!prev) return null;
         return {
@@ -185,7 +177,6 @@ export default function Home() {
     []
   );
 
-  // Handler for image selection
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
@@ -217,9 +208,9 @@ export default function Home() {
       reader.onloadend = () => {
         if (typeof reader.result === "string") {
           const newImage: ImageDetail = {
-            id: Date.now() + Math.random(), // Simple unique ID
+            id: Date.now() + Math.random(),
             src: reader.result as string,
-            description: "", // Initialize with empty description
+            description: "",
           };
           setScopeImages((prev) => [...prev, newImage]);
         }
@@ -235,22 +226,18 @@ export default function Home() {
       reader.readAsDataURL(file);
     });
 
-    // Reset file input value to allow selecting the same file again
     event.target.value = "";
   };
 
-  // Handler to remove an image by ID
   const removeImage = (idToRemove: number) => {
     setScopeImages((prev) => prev.filter((image) => image.id !== idToRemove));
   };
 
-  // Handler to open the image detail modal
   const openImageModal = (index: number) => {
     setSelectedImageIndex(index);
     setIsImageDetailModalOpen(true);
   };
 
-  // Handler to save description from the modal
   const handleSaveImageDescription = (
     index: number,
     newDescription: string
@@ -260,17 +247,15 @@ export default function Home() {
         i === index ? { ...img, description: newDescription } : img
       )
     );
-    setIsImageDetailModalOpen(false); // Close modal after save
+    setIsImageDetailModalOpen(false);
     setSelectedImageIndex(null);
   };
 
-  // Function to get the first line of a description
   const getFirstLine = (text: string): string => {
     if (!text) return "";
     return text.split("\n")[0];
   };
 
-  // Button to open the modal - text changes based on whether items exist
   const manageLineItemsButton = (
     <Button
       size="sm"
@@ -299,17 +284,15 @@ export default function Home() {
       }}
     >
       <main style={{ overflowY: "auto" }}>
-        {/* Main content area */}
         {!isLoading &&
           !isCategorizing &&
           !transcribedText &&
           !categorizedInfo && (
             <>
               <h1 className="text-2xl mb-10 text-center font-bold">
-              Tap the 🎙️ and talk about the topics on each of the cards &hellip;
+                Tap the 🎙️ and talk about the topics on each of the cards &hellip;
               </h1>
 
-              {/* Horizontal Scrolling Cards */}
               <div className="relative w-full overflow-hidden">
                 <div className="flex overflow-x-auto snap-x snap-mandatory bg-muted gap-4 py-8 px-8 -mx-4">
                   {[
@@ -354,7 +337,6 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                {/* Gradient Overlays for Scroll Indication */}
                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none" />
                 <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
               </div>
@@ -374,8 +356,6 @@ export default function Home() {
             </CardContent>
           </Card>
         )}
-
-        {/* {isLoading || isCategorizing ? <h1>Doing Magic</h1> : null} */}
 
         {!isLoading && !isCategorizing && categorizedInfo && (
           <div className="space-y-6 mx-auto max-w-[500px] px-4">
@@ -462,7 +442,6 @@ export default function Home() {
               value={categorizedInfo.scopeOfWork}
               onChange={(value) => handleCategoryChange("scopeOfWork", value)}
             >
-              {/* Image Upload and Display Area */}
               <div>
                 <Label
                   htmlFor="scope-image-input"
@@ -481,7 +460,7 @@ export default function Home() {
                   accept="image/*"
                   multiple
                   onChange={handleImageChange}
-                  className="sr-only" // Hide the default input appearance
+                  className="sr-only"
                   disabled={scopeImages.length >= MAX_IMAGES}
                 />
                 {scopeImages.length > 0 && (
@@ -504,20 +483,18 @@ export default function Home() {
                             className="object-cover w-full h-full transition-transform group-hover:scale-105"
                           />
                         </button>
-                        {/* Close button */}
                         <Button
                           variant="destructive"
                           size="icon"
                           className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-0.5 z-10"
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent opening modal when clicking delete
+                            e.stopPropagation();
                             removeImage(image.id);
                           }}
                           aria-label={`Remove image ${index + 1}`}
                         >
                           <X className="h-3 w-3" />
                         </Button>
-                        {/* Description Snippet */}
                         {image.description && (
                           <p
                             className="mt-1 text-xs text-muted-foreground text-center truncate w-full px-1"
@@ -546,7 +523,6 @@ export default function Home() {
               value={categorizedInfo.budget}
               onChange={(value) => handleCategoryChange("budget", value)}
             >
-              {/* Additional content for Budget card (Table and Button) passed as children */}
               {lineItems.length > 0 && (
                 <div>
                   <h4 className="text-sm font-medium mb-2 text-primary">
@@ -562,15 +538,29 @@ export default function Home() {
       </main>
 
       <footer className="bg-background border-t 0 pt-6 relative mt-8 flex justify-center gap-4">
-        {!isLoading && !isCategorizing && categorizedInfo ?
-        <>
-          <button className="w-24 h-24 rounded-full shadow-lg grid place-items-center" id="reload"><RotateCcw className="h-10 w-10" /></button>
-          <button id="create" className="w-24 h-24 rounded-full shadow-lg grid place-items-center bg-green-700 text-accent-foreground" id="reload"><Check className="h-10 w-10" /></button>
-        </> : <AudioRecorder
-          onRecordingComplete={handleRecordingComplete}
-          isProcessing={isLoading || isCategorizing}
-        />}
-
+        {!isLoading && !isCategorizing && categorizedInfo ? (
+          <>
+            <button
+              className="w-24 h-24 rounded-full shadow-lg grid place-items-center"
+              id="reload"
+              onClick={() => window.location.reload()}
+            >
+              <RotateCcw className="h-10 w-10" />
+            </button>
+            <button
+              id="create"
+              className="w-24 h-24 rounded-full shadow-lg grid place-items-center bg-green-700 text-accent-foreground"
+              onClick={handleCreateDocument}
+            >
+              <Check className="h-10 w-10" />
+            </button>
+          </>
+        ) : (
+          <AudioRecorder
+            onRecordingComplete={handleRecordingComplete}
+            isProcessing={isLoading || isCategorizing}
+          />
+        )}
       </footer>
 
       <LineItemModal
@@ -578,7 +568,6 @@ export default function Home() {
         onOpenChange={setIsLineItemModalOpen}
         lineItems={lineItems}
         onAddLineItem={handleAddLineItem}
-        // onRemoveLineItem={handleRemoveLineItem} // Pass remove function if implemented
       />
 
       {selectedImageData && (
