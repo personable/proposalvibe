@@ -18,11 +18,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea"; // Import Textarea for description snippet logic
 import {
   ClipboardList,
+  Check,
   User,
   CalendarClock,
   DollarSign,
   PlusCircle,
   Pencil,
+  RotateCcw,
   Upload,
   X,
 } from "lucide-react";
@@ -90,18 +92,18 @@ export default function Home() {
 
     try {
       // 1. Transcribe Audio
-      toast({
-        title: "Transcribing Audio",
-        description: "Let's take a look at this job of yours...",
-      });
+      // toast({
+      //   title: "Transcribing Audio",
+      //   description: "Let's take a look at this job of yours...",
+      // });
       const transcriptionResult = await transcribeAudioAction({ audioDataUri });
       if (transcriptionResult && transcriptionResult.transcription) {
         setTranscribedText(transcriptionResult.transcription);
-        toast({
-          title: "Extracting Job Details",
-          description:
-            "OK, let's sort this stuff out and turn it into a proposal.",
-        });
+        // toast({
+        //   title: "Extracting Job Details",
+        //   description:
+        //     "OK, let's sort this stuff out and turn it into a proposal.",
+        // });
         setIsLoading(false); // Stop loading after transcription
         setIsCategorizing(true); // Start categorizing indicator
 
@@ -134,11 +136,8 @@ export default function Home() {
   };
 
   const renderSkeleton = () => (
-    <div className="space-y-6 mt-8">
-      <Skeleton className="rounded-lg h-100 border" />
-      <Skeleton className="rounded-lg h-100 border" />
-      <Skeleton className="rounded-lg h-100 border" />
-      <Skeleton className="rounded-lg h-100 border" />
+    <div className="animate-pulse">
+      LOADING SHIT!!!
     </div>
   );
 
@@ -292,7 +291,7 @@ export default function Home() {
 
   return (
     <div
-      className="container mx-auto px-4 py-8 max-w-2xl"
+      className="mx-auto py-8"
       style={{
         display: "grid",
         gridTemplateRows: "1fr auto",
@@ -306,25 +305,59 @@ export default function Home() {
           !transcribedText &&
           !categorizedInfo && (
             <>
-              <h1 className="text-2xl mb-10 text-center">
-                Talk naturally about your job's{" "}
-                <span className="bg-yellow-300 font-bold">
-                  Customer Contact Information
-                </span>
-                , <span className="bg-yellow-300 font-bold">Scope of Work</span>
-                , <span className="bg-yellow-300 font-bold">Timeline</span>, and{" "}
-                <span className="bg-yellow-300 font-bold">Budget</span>.
+              <h1 className="text-2xl mb-10 text-center font-bold">
+              Tap the 🎙️ and talk about the topics on each of the cards &hellip;
               </h1>
-              <p className="text-center text-xs mb-6 text-muted-foreground">
-                Just like this! 👇
-              </p>
-              <p className="italic text-muted-foreground bg-muted text-s text-center opacity-80 p-6 rounded-2xl mb-4">
-                We're doing this job for Jennifer LaRue at 123 Main St,
-                Portland, OR 97201. Work includes replacing the roof and
-                installing new gutters. The timeline's about two weeks, and the
-                cost is going to be around ten thousand, with one thousand down
-                today. You can reach her at (555) 123-4567 or jlarue at gmail.
-              </p>
+
+              {/* Horizontal Scrolling Cards */}
+              <div className="relative w-full overflow-hidden">
+                <div className="flex overflow-x-auto snap-x snap-mandatory bg-muted gap-4 py-8 px-8 -mx-4">
+                  {[
+                    {
+                      title: "Contact Info",
+                      content: "We're doing this work for Jane Stevens at 12 Main Street in Portland, Maine, 04103. Her email is j-stevens1986 at hotmail. Her number is 555-555-5555.",
+                      icon: "🏠"
+                    },
+                    {
+                      title: "Scope of Work",
+                      content: "We're installing 10 Richards Windows to code. Removing old window weights and stuffing the cavities. We're going to wrap exterior casings with custom-fit aluminum. Clean-up and disposal of old windows.",
+                      icon: "🔨"
+                    },
+                    {
+                      title: "Timeline",
+                      content: "This work should take about three days. If the weather is bad, we'll have to pause, and it'll take longer.",
+                      icon: "📅"
+                    },
+                    {
+                      title: "Budget & Payment",
+                      content: "Total cost is going to be around five-thousand, and we're going to need twenty-five hundred down to start the work.",
+                      icon: "💰"
+                    }
+                  ].map((card, index) => (
+                    <div
+                      key={index}
+                      className="flex-none w-[320px] snap-center first:ml-4 last:mr-4"
+                    >
+                      <Card className="h-[300px] bg-white shadow-lg">
+                        <CardHeader>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{card.icon}</span>
+                            <CardTitle>{card.title}</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground text-m leading-relaxed">
+                            Example: &#8220;{card.content}&#8221;
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+                {/* Gradient Overlays for Scroll Indication */}
+                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+              </div>
             </>
           )}
         {transcribedText && (
@@ -342,11 +375,10 @@ export default function Home() {
           </Card>
         )}
 
-        {isLoading && !transcribedText && renderSkeleton()}
-        {isCategorizing && renderSkeleton()}
+        {/* {isLoading || isCategorizing ? <h1>Doing Magic</h1> : null} */}
 
         {!isLoading && !isCategorizing && categorizedInfo && (
-          <div className="space-y-6 mt-8">
+          <div className="space-y-6 mx-auto max-w-[500px] px-4">
             <CategoryCard title="Contact Information" icon={User}>
               <div className="space-y-3">
                 <div>
@@ -529,11 +561,16 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="bg-background border-t 0 pt-6 relative mt-8">
-        <AudioRecorder
+      <footer className="bg-background border-t 0 pt-6 relative mt-8 flex justify-center gap-4">
+        {!isLoading && !isCategorizing && categorizedInfo ?
+        <>
+          <button className="w-24 h-24 rounded-full shadow-lg grid place-items-center" id="reload"><RotateCcw className="h-10 w-10" /></button>
+          <button id="create" className="w-24 h-24 rounded-full shadow-lg grid place-items-center bg-green-700 text-accent-foreground" id="reload"><Check className="h-10 w-10" /></button>
+        </> : <AudioRecorder
           onRecordingComplete={handleRecordingComplete}
           isProcessing={isLoading || isCategorizing}
-        />
+        />}
+
       </footer>
 
       <LineItemModal

@@ -51,7 +51,7 @@ const ImageDetailModal: React.FC<ImageDetailModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[625px] bg-background">
+      <DialogContent className="sm:max-w-[625px]">
         {" "}
         {/* Adjust size as needed */}
         <DialogHeader>

@@ -28,7 +28,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
       value={value ?? ""}
       onChange={(e) => onChange?.(e.target.value)}
       placeholder={`Enter ${title}...`}
-      className="min-h-[80px] text-sm"
+      className="min-h-[180px] text-sm"
       style={{ whiteSpace: "pre-wrap" }}
     />
   ) : (
