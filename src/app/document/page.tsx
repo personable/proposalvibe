@@ -20,17 +20,32 @@ export default function DocumentPage() {
   const [currentDate] = useState(format(new Date(), 'MM/dd/yyyy'));
 
   useEffect(() => {
-    setScopeOfWork(searchParams.get('scope') || 'Not provided');
-    setContactInfo({
-      name: searchParams.get('name') || 'Not provided',
-      address: searchParams.get('address') || 'Not provided',
-      phone: searchParams.get('phone') || 'Not provided',
-      email: searchParams.get('email') || 'Not provided'
-    });
-    setTimeline(searchParams.get('timeline') || 'Not provided');
-    setBudget(searchParams.get('budget') || 'Not provided');
-    setDownPayment(searchParams.get('downPayment') || '50');
-    setTerms(searchParams.get('terms') || 'Standard contractor terms apply.');
+    // Only access searchParams after component has mounted and params exist
+    if (!searchParams) return;
+
+    const scope = searchParams.get('scope');
+    const name = searchParams.get('name');
+    const address = searchParams.get('address');
+    const phone = searchParams.get('phone');
+    const email = searchParams.get('email');
+    const timelineParam = searchParams.get('timeline');
+    const budgetParam = searchParams.get('budget');
+    const downPaymentParam = searchParams.get('downPayment');
+    const termsParam = searchParams.get('terms');
+
+    if (scope) setScopeOfWork(scope);
+    if (name || address || phone || email) {
+      setContactInfo({
+        name: name || 'Not provided',
+        address: address || 'Not provided',
+        phone: phone || 'Not provided',
+        email: email || 'Not provided'
+      });
+    }
+    if (timelineParam) setTimeline(timelineParam);
+    if (budgetParam) setBudget(budgetParam);
+    if (downPaymentParam) setDownPayment(downPaymentParam);
+    if (termsParam) setTerms(termsParam);
   }, [searchParams]);
 
   // Extract numbers from budget text

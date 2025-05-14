@@ -18,6 +18,17 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      handlebars: 'handlebars/runtime'
+    };
+    config.module.rules.push({
+      test: /\.hbs$/,
+      use: 'raw-loader'
+    });
+    return config;
+  },
 };
 
 export default nextConfig;
