@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 
 export default function DocumentPage() {
-  const searchParams = useSearchParams();
   const [scopeOfWork, setScopeOfWork] = useState('Not provided');
   const [contactInfo, setContactInfo] = useState({
     name: 'Not provided',
@@ -20,32 +18,20 @@ export default function DocumentPage() {
   const [currentDate] = useState(format(new Date(), 'MM/dd/yyyy'));
 
   useEffect(() => {
-    // Only access searchParams after component mount
+    // Only access URL parameters after component mount
     const params = new URLSearchParams(window.location.search);
     
-    const scope = params.get('scope');
-    const name = params.get('name');
-    const address = params.get('address');
-    const phone = params.get('phone');
-    const email = params.get('email');
-    const timelineParam = params.get('timeline');
-    const budgetParam = params.get('budget');
-    const downPaymentParam = params.get('downPayment');
-    const termsParam = params.get('terms');
-
-    if (scope) setScopeOfWork(scope);
-    if (name || address || phone || email) {
-      setContactInfo({
-        name: name || 'Not provided',
-        address: address || 'Not provided',
-        phone: phone || 'Not provided',
-        email: email || 'Not provided'
-      });
-    }
-    if (timelineParam) setTimeline(timelineParam);
-    if (budgetParam) setBudget(budgetParam);
-    if (downPaymentParam) setDownPayment(downPaymentParam);
-    if (termsParam) setTerms(termsParam);
+    setScopeOfWork(params.get('scope') || 'Not provided');
+    setContactInfo({
+      name: params.get('name') || 'Not provided',
+      address: params.get('address') || 'Not provided',
+      phone: params.get('phone') || 'Not provided',
+      email: params.get('email') || 'Not provided'
+    });
+    setTimeline(params.get('timeline') || 'Not provided');
+    setBudget(params.get('budget') || 'Not provided');
+    setDownPayment(params.get('downPayment') || '50');
+    setTerms(params.get('terms') || 'Standard contractor terms apply.');
   }, []); // Empty dependency array since we only need to run this once on mount
 
   // Extract numbers from budget text
