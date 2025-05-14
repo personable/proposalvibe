@@ -1,20 +1,20 @@
+'use client';
+
+import { useSearchParams } from 'next/navigation';
 import DocumentPage from './DocumentPage';
-import { SearchParams } from 'next/navigation'
 
-interface Props {
-  searchParams: SearchParams
-}
+export default function DocumentPageWrapper() {
+  const searchParams = useSearchParams();
 
-export default function DocumentPageWrapper({ searchParams }: Props) {
-  const scopeOfWork = searchParams.scope || 'Not provided';
-  const name = searchParams.name || 'Not provided';
-  const address = searchParams.address || 'Not provided';
-  const phone = searchParams.phone || 'Not provided';
-  const email = searchParams.email || 'Not provided';
-  const timeline = searchParams.timeline || 'Not provided';
-  const budget = searchParams.budget || 'Not provided';
-  const downPayment = searchParams.downPayment || '50';
-  const terms = searchParams.terms || 'Standard contractor terms apply.';
+  const scopeOfWork = searchParams.get('scope') || 'Not provided';
+  const name = searchParams.get('name') || 'Not provided';
+  const address = searchParams.get('address') || 'Not provided';
+  const phone = searchParams.get('phone') || 'Not provided';
+  const email = searchParams.get('email') || 'Not provided';
+  const timeline = searchParams.get('timeline') || 'Not provided';
+  const budget = searchParams.get('budget') || 'Not provided';
+  const downPayment = searchParams.get('downPayment') || '50';
+  const terms = searchParams.get('terms') || 'Standard contractor terms apply.';
 
   const contactInfo = {
     name,

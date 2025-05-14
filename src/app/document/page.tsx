@@ -1,5 +1,11 @@
+import { Suspense } from 'react';
 import DocumentPageWrapper from './DocumentPageWrapper';
 
-export default function DocumentPage(props: any) {
-  return <DocumentPageWrapper searchParams={props.searchParams} />;
+// Convert to Server Component
+export default function DocumentPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DocumentPageWrapper />
+    </Suspense>
+  );
 }
