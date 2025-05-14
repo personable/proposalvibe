@@ -18,10 +18,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
-    config.resolve.alias['handlebars'] = false;
-    return config;
-  },
 };
 
 export default nextConfig;
