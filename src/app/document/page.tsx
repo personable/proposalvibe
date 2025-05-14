@@ -20,17 +20,18 @@ export default function DocumentPage() {
   const [currentDate] = useState(format(new Date(), 'MM/dd/yyyy'));
 
   useEffect(() => {
-    if (!searchParams) return;
-
-    const scope = searchParams.get('scope');
-    const name = searchParams.get('name');
-    const address = searchParams.get('address');
-    const phone = searchParams.get('phone');
-    const email = searchParams.get('email');
-    const timelineParam = searchParams.get('timeline');
-    const budgetParam = searchParams.get('budget');
-    const downPaymentParam = searchParams.get('downPayment');
-    const termsParam = searchParams.get('terms');
+    // Only access searchParams after component mount
+    const params = new URLSearchParams(window.location.search);
+    
+    const scope = params.get('scope');
+    const name = params.get('name');
+    const address = params.get('address');
+    const phone = params.get('phone');
+    const email = params.get('email');
+    const timelineParam = params.get('timeline');
+    const budgetParam = params.get('budget');
+    const downPaymentParam = params.get('downPayment');
+    const termsParam = params.get('terms');
 
     if (scope) setScopeOfWork(scope);
     if (name || address || phone || email) {
@@ -45,7 +46,7 @@ export default function DocumentPage() {
     if (budgetParam) setBudget(budgetParam);
     if (downPaymentParam) setDownPayment(downPaymentParam);
     if (termsParam) setTerms(termsParam);
-  }, [searchParams]);
+  }, []); // Empty dependency array since we only need to run this once on mount
 
   // Extract numbers from budget text
   const extractAmounts = (text: string) => {
