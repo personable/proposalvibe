@@ -97,17 +97,16 @@ export default function Home() {
     
     const params = new URLSearchParams({
       scope: categorizedInfo.scopeOfWork,
-      name: categorizedInfo.contactInformation.name,
-      address: categorizedInfo.contactInformation.address,
-      phone: categorizedInfo.contactInformation.phone,
-      email: categorizedInfo.contactInformation.email,
+      name: contactName || categorizedInfo.contactInformation.name,
+      address: contactAddress || categorizedInfo.contactInformation.address,
+      phone: contactPhone || categorizedInfo.contactInformation.phone,
+      email: contactEmail || categorizedInfo.contactInformation.email,
       timeline: categorizedInfo.timeline,
       budget: categorizedInfo.budget,
       downPayment: downPaymentPercentage,
       terms: termsAndConditions
     });
 
-    // Navigate in the same window
     router.push(`/document?${params.toString()}`);
   };
 
@@ -177,7 +176,6 @@ export default function Home() {
   };
 
   const handleDownPaymentChange = (value: string) => {
-    // Only allow numbers and limit to 100
     const numValue = value.replace(/[^\d]/g, '');
     if (numValue === '' || (parseInt(numValue) >= 0 && parseInt(numValue) <= 100)) {
       setDownPaymentPercentage(numValue);
@@ -307,21 +305,6 @@ export default function Home() {
     if (!text) return "";
     return text.split("\n")[0];
   };
-
-  const manageLineItemsButton = (
-    <Button
-      size="sm"
-      variant="outline"
-      onClick={() => setIsLineItemModalOpen(true)}
-    >
-      {lineItems.length > 0 ? (
-        <Pencil className="mr-2 h-4 w-4" />
-      ) : (
-        <PlusCircle className="mr-2 h-4 w-4" />
-      )}
-      {lineItems.length > 0 ? "View/Edit Line Items" : "Add Line Items"}
-    </Button>
-  );
 
   const selectedImageData =
     selectedImageIndex !== null ? scopeImages[selectedImageIndex] : null;

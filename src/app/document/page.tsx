@@ -20,7 +20,6 @@ export default function DocumentPage() {
   const [currentDate] = useState(format(new Date(), 'MM/dd/yyyy'));
 
   useEffect(() => {
-    // Only access searchParams after component has mounted and params exist
     if (!searchParams) return;
 
     const scope = searchParams.get('scope');
