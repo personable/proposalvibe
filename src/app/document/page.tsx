@@ -1,24 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 
 export default function DocumentPage() {
   const searchParams = useSearchParams();
-  
-  const scopeOfWork = searchParams.get('scope') || 'Not provided';
-  const contactInfo = {
-    name: searchParams.get('name') || 'Not provided',
-    address: searchParams.get('address') || 'Not provided',
-    phone: searchParams.get('phone') || 'Not provided',
-    email: searchParams.get('email') || 'Not provided'
-  };
-  const timeline = searchParams.get('timeline') || 'Not provided';
-  const budget = searchParams.get('budget') || 'Not provided';
-  const downPayment = searchParams.get('downPayment') || '50';
-  const terms = searchParams.get('terms') || 'Standard contractor terms apply.';
-  const currentDate = format(new Date(), 'MM/dd/yyyy');
+  const [scopeOfWork, setScopeOfWork] = useState('Not provided');
+  const [contactInfo, setContactInfo] = useState({
+    name: 'Not provided',
+    address: 'Not provided',
+    phone: 'Not provided',
+    email: 'Not provided'
+  });
+  const [timeline, setTimeline] = useState('Not provided');
+  const [budget, setBudget] = useState('Not provided');
+  const [downPayment, setDownPayment] = useState('50');
+  const [terms, setTerms] = useState('Standard contractor terms apply.');
+  const [currentDate] = useState(format(new Date(), 'MM/dd/yyyy'));
+
+  useEffect(() => {
+    setScopeOfWork(searchParams.get('scope') || 'Not provided');
+    setContactInfo({
+      name: searchParams.get('name') || 'Not provided',
+      address: searchParams.get('address') || 'Not provided',
+      phone: searchParams.get('phone') || 'Not provided',
+      email: searchParams.get('email') || 'Not provided'
+    });
+    setTimeline(searchParams.get('timeline') || 'Not provided');
+    setBudget(searchParams.get('budget') || 'Not provided');
+    setDownPayment(searchParams.get('downPayment') || '50');
+    setTerms(searchParams.get('terms') || 'Standard contractor terms apply.');
+  }, [searchParams]);
 
   // Extract numbers from budget text
   const extractAmounts = (text: string) => {
@@ -120,7 +133,7 @@ export default function DocumentPage() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold mb-4">Payment</h2>
         <p className="text-sm">
-          To start work, we will need a {downPayment}% deposit (${downPaymentAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}). 
+          To start work, we will need a {downPayment}% deposit (${downPaymentAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).
           The remainder (${(total - downPaymentAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) will be paid when the work has been completed to your satisfaction.
         </p>
       </div>
