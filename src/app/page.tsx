@@ -1,21 +1,20 @@
-// @ts-nocheck
-// TODO: Fix TS errors and remove the Nocheck
-"use client";
+'use client';
 
 import React, { useState, useCallback, useEffect } from "react";
-import Image from "next/image"; // Import next/image
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
 import LineItemModal from "@/components/line-item-modal";
-import ImageDetailModal from "@/components/image-detail-modal"; // Import the new modal
+import ImageDetailModal from "@/components/image-detail-modal";
 import LineItemTable from "@/components/line-item-table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea for description snippet logic
+import { Textarea } from "@/components/ui/textarea";
 import {
   ClipboardList,
   Check,
@@ -27,29 +26,56 @@ import {
   RotateCcw,
   Upload,
   X,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Percent,
 } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
-import type { LineItem, ImageDetail } from "@/types"; // Import ImageDetail type
+import type { LineItem, ImageDetail } from "@/types";
 import { cn } from "@/lib/utils";
 
 const MAX_IMAGES = 5;
 
+const EXAMPLE_CARDS = [
+  {
+    title: "Contact Info",
+    content: "We're doing this work for Jane Stevens at 12 Main Street in Portland, Maine, 04103. Her email is j-stevens1986 at hotmail. Her number is 555-555-5555.",
+    icon: "🏠"
+  },
+  {
+    title: "Scope of Work",
+    content: "We're installing 10 Richards Windows to code. Removing old window weights and stuffing the cavities. We're going to wrap exterior casings with custom-fit aluminum. Clean-up and disposal of old windows.",
+    icon: "🔨"
+  },
+  {
+    title: "Timeline",
+    content: "This work should take about three days. If the weather is bad, we'll have to pause, and it'll take longer.",
+    icon: "📅"
+  },
+  {
+    title: "Budget & Payment",
+    content: "Total cost is going to be around five-thousand, and we're going to need twenty-five hundred down to start the work.",
+    icon: "💰"
+  }
+];
+
 export default function Home() {
+  const router = useRouter();
   const [transcribedText, setTranscribedText] = useState<string | null>(null);
-  const [categorizedInfo, setCategorizedInfo] =
-    useState<CategorizeInformationOutput | null>(null);
+  const [categorizedInfo, setCategorizedInfo] = useState<CategorizeInformationOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [isLineItemModalOpen, setIsLineItemModalOpen] = useState(false);
-  const [isImageDetailModalOpen, setIsImageDetailModalOpen] = useState(false); // State for image detail modal
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(
-    null
-  ); // State for selected image index
+  const [isImageDetailModalOpen, setIsImageDetailModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [scopeImages, setScopeImages] = useState<ImageDetail[]>([]); // State now holds ImageDetail objects
+  const [scopeImages, setScopeImages] = useState<ImageDetail[]>([]);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [downPaymentPercentage, setDownPaymentPercentage] = useState<string>("");
+  const [termsAndConditions, setTermsAndConditions] = useState<string>("");
 
-  // State for individual contact fields
   const [contactName, setContactName] = useState("");
   const [contactAddress, setContactAddress] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -57,7 +83,6 @@ export default function Home() {
 
   const { toast } = useToast();
 
-  // Effect to update contact input fields when categorizedInfo changes
   useEffect(() => {
     if (categorizedInfo?.contactInformation) {
       setContactName(categorizedInfo.contactInformation.name || "");
@@ -66,6 +91,25 @@ export default function Home() {
       setContactEmail(categorizedInfo.contactInformation.email || "");
     }
   }, [categorizedInfo]);
+
+  const handleCreateDocument = () => {
+    if (!categorizedInfo) return;
+    
+    const params = new URLSearchParams({
+      scope: categorizedInfo.scopeOfWork,
+      name: categorizedInfo.contactInformation.name,
+      address: categorizedInfo.contactInformation.address,
+      phone: categorizedInfo.contactInformation.phone,
+      email: categorizedInfo.contactInformation.email,
+      timeline: categorizedInfo.timeline,
+      budget: categorizedInfo.budget,
+      downPayment: downPaymentPercentage,
+      terms: termsAndConditions
+    });
+
+    // Navigate in the same window
+    router.push(`/document?${params.toString()}`);
+  };
 
   const handleRecordingComplete = async (audioDataUri: string) => {
     if (!audioDataUri) {
@@ -77,46 +121,31 @@ export default function Home() {
       return;
     }
     setIsLoading(true);
-    setTranscribedText(null); // Clear previous transcription
-    setCategorizedInfo(null); // Clear previous categories
-    setLineItems([]); // Clear previous line items
-    setScopeImages([]); // Clear previous images
-    setIsLineItemModalOpen(false); // Ensure line item modal is closed
-    setIsImageDetailModalOpen(false); // Ensure image detail modal is closed
-    setSelectedImageIndex(null); // Clear selected image
-    // Clear contact fields
+    setTranscribedText(null);
+    setCategorizedInfo(null);
+    setLineItems([]);
+    setScopeImages([]);
+    setIsLineItemModalOpen(false);
+    setIsImageDetailModalOpen(false);
+    setSelectedImageIndex(null);
     setContactName("");
     setContactAddress("");
     setContactPhone("");
     setContactEmail("");
+    setDownPaymentPercentage("");
+    setTermsAndConditions("");
 
     try {
-      // 1. Transcribe Audio
-      // toast({
-      //   title: "Transcribing Audio",
-      //   description: "Let's take a look at this job of yours...",
-      // });
       const transcriptionResult = await transcribeAudioAction({ audioDataUri });
       if (transcriptionResult && transcriptionResult.transcription) {
         setTranscribedText(transcriptionResult.transcription);
-        // toast({
-        //   title: "Extracting Job Details",
-        //   description:
-        //     "OK, let's sort this stuff out and turn it into a proposal.",
-        // });
-        setIsLoading(false); // Stop loading after transcription
-        setIsCategorizing(true); // Start categorizing indicator
+        setIsLoading(false);
+        setIsCategorizing(true);
 
-        // 2. Categorize Information
         const categorizationResult = await categorizeInformationAction({
           transcribedText: transcriptionResult.transcription,
         });
         setCategorizedInfo(categorizationResult);
-
-        // toast({
-        //   title: "Categorization Complete!",
-        //   description: "Job details sorted.",
-        // });
       } else {
         throw new Error("Transcription failed or returned empty.");
       }
@@ -135,6 +164,26 @@ export default function Home() {
     }
   };
 
+  const handleNextCard = () => {
+    if (currentCardIndex < EXAMPLE_CARDS.length - 1) {
+      setCurrentCardIndex(currentCardIndex + 1);
+    }
+  };
+
+  const handlePrevCard = () => {
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex(currentCardIndex - 1);
+    }
+  };
+
+  const handleDownPaymentChange = (value: string) => {
+    // Only allow numbers and limit to 100
+    const numValue = value.replace(/[^\d]/g, '');
+    if (numValue === '' || (parseInt(numValue) >= 0 && parseInt(numValue) <= 100)) {
+      setDownPaymentPercentage(numValue);
+    }
+  };
+
   const renderSkeleton = () => (
     <div className="animate-pulse">
       LOADING SHIT!!!
@@ -142,15 +191,13 @@ export default function Home() {
   );
 
   const handleAddLineItem = (newItem: Omit<LineItem, "id">) => {
-    setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]); // Use timestamp as simple ID
+    setLineItems((prevItems) => [...prevItems, { ...newItem, id: Date.now() }]);
   };
 
-  // Generic handler for Scope, Timeline, Budget textareas
   const handleCategoryChange = useCallback(
     (category: keyof CategorizeInformationOutput, value: string) => {
       setCategorizedInfo((prev) => {
         if (!prev) return null;
-        // Exclude contactInformation from this handler
         if (category === "contactInformation") return prev;
         return { ...prev, [category]: value };
       });
@@ -158,19 +205,16 @@ export default function Home() {
     []
   );
 
-  // Specific handler for Contact Information inputs
   const handleContactChange = useCallback(
     (
       field: keyof CategorizeInformationOutput["contactInformation"],
       value: string
     ) => {
-      // Update the specific input field's state
       if (field === "name") setContactName(value);
       else if (field === "address") setContactAddress(value);
       else if (field === "phone") setContactPhone(value);
       else if (field === "email") setContactEmail(value);
 
-      // Update the main categorizedInfo state
       setCategorizedInfo((prev) => {
         if (!prev) return null;
         return {
@@ -185,7 +229,6 @@ export default function Home() {
     []
   );
 
-  // Handler for image selection
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
@@ -217,9 +260,9 @@ export default function Home() {
       reader.onloadend = () => {
         if (typeof reader.result === "string") {
           const newImage: ImageDetail = {
-            id: Date.now() + Math.random(), // Simple unique ID
+            id: Date.now() + Math.random(),
             src: reader.result as string,
-            description: "", // Initialize with empty description
+            description: "",
           };
           setScopeImages((prev) => [...prev, newImage]);
         }
@@ -235,22 +278,18 @@ export default function Home() {
       reader.readAsDataURL(file);
     });
 
-    // Reset file input value to allow selecting the same file again
     event.target.value = "";
   };
 
-  // Handler to remove an image by ID
   const removeImage = (idToRemove: number) => {
     setScopeImages((prev) => prev.filter((image) => image.id !== idToRemove));
   };
 
-  // Handler to open the image detail modal
   const openImageModal = (index: number) => {
     setSelectedImageIndex(index);
     setIsImageDetailModalOpen(true);
   };
 
-  // Handler to save description from the modal
   const handleSaveImageDescription = (
     index: number,
     newDescription: string
@@ -260,17 +299,15 @@ export default function Home() {
         i === index ? { ...img, description: newDescription } : img
       )
     );
-    setIsImageDetailModalOpen(false); // Close modal after save
+    setIsImageDetailModalOpen(false);
     setSelectedImageIndex(null);
   };
 
-  // Function to get the first line of a description
   const getFirstLine = (text: string): string => {
     if (!text) return "";
     return text.split("\n")[0];
   };
 
-  // Button to open the modal - text changes based on whether items exist
   const manageLineItemsButton = (
     <Button
       size="sm"
@@ -290,53 +327,39 @@ export default function Home() {
     selectedImageIndex !== null ? scopeImages[selectedImageIndex] : null;
 
   return (
-    <div
-      className="mx-auto py-8"
-      style={{
-        display: "grid",
-        gridTemplateRows: "1fr auto",
-        minHeight: "100%",
-      }}
-    >
+    <div className="mx-auto py-8" style={{ display: "grid", gridTemplateRows: "1fr auto", minHeight: "100%" }}>
       <main style={{ overflowY: "auto" }}>
-        {/* Main content area */}
-        {!isLoading &&
-          !isCategorizing &&
-          !transcribedText &&
-          !categorizedInfo && (
-            <>
-              <h1 className="text-2xl mb-10 text-center font-bold">
+        {!isLoading && !isCategorizing && !transcribedText && !categorizedInfo && (
+          <>
+            <h1 className="text-2xl mb-10 text-center font-bold">
               Tap the 🎙️ and talk about the topics on each of the cards &hellip;
-              </h1>
+            </h1>
 
-              {/* Horizontal Scrolling Cards */}
-              <div className="relative w-full overflow-hidden">
-                <div className="flex overflow-x-auto snap-x snap-mandatory bg-muted gap-4 py-8 px-8 -mx-4">
-                  {[
-                    {
-                      title: "Contact Info",
-                      content: "We're doing this work for Jane Stevens at 12 Main Street in Portland, Maine, 04103. Her email is j-stevens1986 at hotmail. Her number is 555-555-5555.",
-                      icon: "🏠"
-                    },
-                    {
-                      title: "Scope of Work",
-                      content: "We're installing 10 Richards Windows to code. Removing old window weights and stuffing the cavities. We're going to wrap exterior casings with custom-fit aluminum. Clean-up and disposal of old windows.",
-                      icon: "🔨"
-                    },
-                    {
-                      title: "Timeline",
-                      content: "This work should take about three days. If the weather is bad, we'll have to pause, and it'll take longer.",
-                      icon: "📅"
-                    },
-                    {
-                      title: "Budget & Payment",
-                      content: "Total cost is going to be around five-thousand, and we're going to need twenty-five hundred down to start the work.",
-                      icon: "💰"
-                    }
-                  ].map((card, index) => (
+            <div className="relative w-full overflow-hidden px-4">
+              <div className="relative flex justify-center items-center">
+                <button
+                  onClick={handlePrevCard}
+                  className={cn(
+                    "absolute left-0 z-10 p-2 bg-white/80 rounded-full shadow-lg",
+                    currentCardIndex === 0 && "opacity-50 cursor-not-allowed"
+                  )}
+                  disabled={currentCardIndex === 0}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                
+                <div className="w-[320px] relative">
+                  {EXAMPLE_CARDS.map((card, index) => (
                     <div
                       key={index}
-                      className="flex-none w-[320px] snap-center first:ml-4 last:mr-4"
+                      className={cn(
+                        "absolute top-0 w-full transition-all duration-300 transform",
+                        index === currentCardIndex
+                          ? "relative z-20 opacity-100 translate-x-0"
+                          : index === currentCardIndex + 1
+                          ? "opacity-50 translate-x-[90%]"
+                          : "opacity-0 pointer-events-none translate-x-full"
+                      )}
                     >
                       <Card className="h-[300px] bg-white shadow-lg">
                         <CardHeader>
@@ -354,12 +377,36 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                {/* Gradient Overlays for Scroll Indication */}
-                <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+
+                <button
+                  onClick={handleNextCard}
+                  className={cn(
+                    "absolute right-0 z-10 p-2 bg-white/80 rounded-full shadow-lg",
+                    currentCardIndex === EXAMPLE_CARDS.length - 1 && "opacity-50 cursor-not-allowed"
+                  )}
+                  disabled={currentCardIndex === EXAMPLE_CARDS.length - 1}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
               </div>
-            </>
-          )}
+
+              <div className="flex justify-center gap-1 mt-4">
+                {EXAMPLE_CARDS.map((_, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "w-2 h-2 rounded-full transition-colors",
+                      index === currentCardIndex
+                        ? "bg-foreground"
+                        : "bg-muted"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
         {transcribedText && (
           <Card className="mt-8 mb-6 shadow-sm bg-secondary border-secondary-foreground/10 sr-only">
             <CardHeader>
@@ -375,8 +422,6 @@ export default function Home() {
           </Card>
         )}
 
-        {/* {isLoading || isCategorizing ? <h1>Doing Magic</h1> : null} */}
-
         {!isLoading && !isCategorizing && categorizedInfo && (
           <div className="space-y-6 mx-auto max-w-[500px] px-4">
             <CategoryCard title="Contact Information" icon={User}>
@@ -391,9 +436,7 @@ export default function Home() {
                   <Input
                     id="contact-name"
                     value={contactName === "Not mentioned" ? "" : contactName}
-                    onChange={(e) =>
-                      handleContactChange("name", e.target.value)
-                    }
+                    onChange={(e) => handleContactChange("name", e.target.value)}
                     placeholder="Enter name..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -407,12 +450,8 @@ export default function Home() {
                   </Label>
                   <Input
                     id="contact-address"
-                    value={
-                      contactAddress === "Not mentioned" ? "" : contactAddress
-                    }
-                    onChange={(e) =>
-                      handleContactChange("address", e.target.value)
-                    }
+                    value={contactAddress === "Not mentioned" ? "" : contactAddress}
+                    onChange={(e) => handleContactChange("address", e.target.value)}
                     placeholder="Enter address..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -428,9 +467,7 @@ export default function Home() {
                     id="contact-phone"
                     type="tel"
                     value={contactPhone === "Not mentioned" ? "" : contactPhone}
-                    onChange={(e) =>
-                      handleContactChange("phone", e.target.value)
-                    }
+                    onChange={(e) => handleContactChange("phone", e.target.value)}
                     placeholder="Enter phone..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -446,9 +483,7 @@ export default function Home() {
                     id="contact-email"
                     type="email"
                     value={contactEmail === "Not mentioned" ? "" : contactEmail}
-                    onChange={(e) =>
-                      handleContactChange("email", e.target.value)
-                    }
+                    onChange={(e) => handleContactChange("email", e.target.value)}
                     placeholder="Enter email..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -462,14 +497,12 @@ export default function Home() {
               value={categorizedInfo.scopeOfWork}
               onChange={(value) => handleCategoryChange("scopeOfWork", value)}
             >
-              {/* Image Upload and Display Area */}
               <div>
                 <Label
                   htmlFor="scope-image-input"
                   className={cn(
                     "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer",
-                    scopeImages.length >= MAX_IMAGES &&
-                      "opacity-50 cursor-not-allowed"
+                    scopeImages.length >= MAX_IMAGES && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Upload className="mr-2 h-4 w-4" />
@@ -481,7 +514,7 @@ export default function Home() {
                   accept="image/*"
                   multiple
                   onChange={handleImageChange}
-                  className="sr-only" // Hide the default input appearance
+                  className="sr-only"
                   disabled={scopeImages.length >= MAX_IMAGES}
                 />
                 {scopeImages.length > 0 && (
@@ -489,7 +522,7 @@ export default function Home() {
                     {scopeImages.map((image, index) => (
                       <div
                         key={image.id}
-                        className="relative group flex flex-col items-center"
+                        className="relative group/menu-item flex flex-col items-center"
                       >
                         <button
                           onClick={() => openImageModal(index)}
@@ -504,20 +537,18 @@ export default function Home() {
                             className="object-cover w-full h-full transition-transform group-hover:scale-105"
                           />
                         </button>
-                        {/* Close button */}
                         <Button
                           variant="destructive"
                           size="icon"
                           className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-0.5 z-10"
                           onClick={(e) => {
-                            e.stopPropagation(); // Prevent opening modal when clicking delete
+                            e.stopPropagation();
                             removeImage(image.id);
                           }}
                           aria-label={`Remove image ${index + 1}`}
                         >
                           <X className="h-3 w-3" />
                         </Button>
-                        {/* Description Snippet */}
                         {image.description && (
                           <p
                             className="mt-1 text-xs text-muted-foreground text-center truncate w-full px-1"
@@ -539,38 +570,106 @@ export default function Home() {
               value={categorizedInfo.timeline}
               onChange={(value) => handleCategoryChange("timeline", value)}
             />
-            <CategoryCard
-              title="Budget"
-              icon={DollarSign}
-              isEditable
-              value={categorizedInfo.budget}
-              onChange={(value) => handleCategoryChange("budget", value)}
-            >
-              {/* Additional content for Budget card (Table and Button) passed as children */}
-              {lineItems.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2 text-primary">
-                    Line Items:
-                  </h4>
-                  <LineItemTable lineItems={lineItems} />
+            <CategoryCard title="Budget" icon={DollarSign}>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold">Budget</h2>
+                  <span className="text-2xl">$</span>
                 </div>
-              )}
-              <div>{manageLineItemsButton}</div>
+                
+                <Textarea
+                  value={categorizedInfo.budget === "Not mentioned" ? "" : categorizedInfo.budget}
+                  onChange={(e) => handleCategoryChange("budget", e.target.value)}
+                  placeholder="Enter budget details..."
+                  className="min-h-[100px] text-sm bg-white"
+                />
+
+                {lineItems.length > 0 && (
+                  <div className="bg-white p-4 rounded-lg border">
+                    <LineItemTable lineItems={lineItems} />
+                  </div>
+                )}
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsLineItemModalOpen(true)}
+                  className="w-full"
+                >
+                  {lineItems.length > 0 ? (
+                    <Pencil className="mr-2 h-4 w-4" />
+                  ) : (
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                  )}
+                  {lineItems.length > 0 ? "View/Edit Line Items" : "Add Line Items"}
+                </Button>
+
+                <div className="pt-4 border-t">
+                  <Label htmlFor="down-payment" className="text-sm font-medium flex items-center gap-2">
+                    <Percent className="h-4 w-4" />
+                    Down Payment Percentage
+                  </Label>
+                  <div className="mt-2 relative">
+                    <Input
+                      id="down-payment"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={downPaymentPercentage}
+                      onChange={(e) => handleDownPaymentChange(e.target.value)}
+                      placeholder="Enter down payment percentage..."
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CategoryCard>
+
+            <CategoryCard title="Terms & Conditions" icon={FileText}>
+              <div className="space-y-2">
+                <Label htmlFor="terms" className="text-sm font-medium">
+                  Additional Terms & Conditions
+                </Label>
+                <Textarea
+                  id="terms"
+                  value={termsAndConditions}
+                  onChange={(e) => setTermsAndConditions(e.target.value)}
+                  placeholder="Enter any additional terms and conditions..."
+                  className="min-h-[150px]"
+                />
+              </div>
             </CategoryCard>
           </div>
         )}
       </main>
 
       <footer className="bg-background border-t 0 pt-6 relative mt-8 flex justify-center gap-4">
-        {!isLoading && !isCategorizing && categorizedInfo ?
-        <>
-          <button className="w-24 h-24 rounded-full shadow-lg grid place-items-center" id="reload"><RotateCcw className="h-10 w-10" /></button>
-          <button id="create" className="w-24 h-24 rounded-full shadow-lg grid place-items-center bg-green-700 text-accent-foreground" id="reload"><Check className="h-10 w-10" /></button>
-        </> : <AudioRecorder
-          onRecordingComplete={handleRecordingComplete}
-          isProcessing={isLoading || isCategorizing}
-        />}
-
+        {!isLoading && !isCategorizing && categorizedInfo ? (
+          <>
+            <button
+              className="w-24 h-24 rounded-full shadow-lg grid place-items-center"
+              id="reload"
+              onClick={() => window.location.reload()}
+            >
+              <RotateCcw className="h-10 w-10" />
+            </button>
+            <button
+              id="create"
+              className="w-24 h-24 rounded-full shadow-lg grid place-items-center bg-green-700 text-accent-foreground"
+              onClick={handleCreateDocument}
+            >
+              <Check className="h-10 w-10" />
+            </button>
+          </>
+        ) : (
+          <AudioRecorder
+            onRecordingComplete={handleRecordingComplete}
+            isProcessing={isLoading || isCategorizing}
+          />
+        )}
       </footer>
 
       <LineItemModal
@@ -578,7 +677,6 @@ export default function Home() {
         onOpenChange={setIsLineItemModalOpen}
         lineItems={lineItems}
         onAddLineItem={handleAddLineItem}
-        // onRemoveLineItem={handleRemoveLineItem} // Pass remove function if implemented
       />
 
       {selectedImageData && (
