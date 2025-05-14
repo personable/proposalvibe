@@ -1,13 +1,10 @@
-// @ts-nocheck
-// TODO: Fix TS errors and remove the Nocheck
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, StopCircle, Loader2, Ear } from "lucide-react";
+import { Mic, StopCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Extend window type for SpeechRecognition
 declare global {
   interface Window {
     SpeechRecognition: typeof SpeechRecognition;
@@ -39,18 +36,22 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       speechRecognitionRef.current.onend = null;
       speechRecognitionRef.current = null;
     }
-    setLastWord(null); // Clear last word when stopping/cleaning up
+    setLastWord(null);
+  };
+
+  const validateAudioDataUri = (dataUri: string): boolean => {
+    const dataUriPattern = /^data:audio\/(webm|wav|ogg|mp3);base64,([a-zA-Z0-9+/]+=*)$/;
+    return dataUriPattern.test(dataUri);
   };
 
   const startRecording = useCallback(async () => {
     setIsRecording(true);
-    setLastWord(null); // Clear previous last word
+    setLastWord(null);
     audioChunksRef.current = [];
 
-    // --- MediaRecorder Setup (for final audio blob) ---
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const options = { mimeType: "audio/webm" }; // Or other supported type
+      const options = { mimeType: "audio/webm" };
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
@@ -61,16 +62,28 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: options.mimeType,
-        });
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = () => {
-          const base64AudioDataUri = reader.result as string;
-          onRecordingComplete(base64AudioDataUri);
-        };
-        stream.getTracks().forEach((track) => track.stop()); // Stop the media stream tracks
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: options.mimeType,
+          });
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          reader.onloadend = () => {
+            const base64AudioDataUri = reader.result as string;
+            if (!validateAudioDataUri(base64AudioDataUri)) {
+              throw new Error("Invalid audio data URI format");
+            }
+            onRecordingComplete(base64AudioDataUri);
+          };
+          stream.getTracks().forEach((track) => track.stop());
+        } catch (error) {
+          console.error("Error processing audio data:", error);
+          toast({
+            title: "Processing Error",
+            description: "Failed to process audio recording. Please try again.",
+            variant: "destructive",
+          });
+        }
       };
 
       mediaRecorder.start();
@@ -87,11 +100,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         variant: "destructive",
       });
       setIsRecording(false);
-      cleanupSpeechRecognition(); // Ensure cleanup if MediaRecorder fails
-      return; // Stop if we can't record audio
+      cleanupSpeechRecognition();
+      return;
     }
 
-    // --- SpeechRecognition Setup (for live feedback) ---
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -100,7 +112,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         speechRecognitionRef.current = recognition;
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = "en-US"; // Or make configurable
+        recognition.lang = "en-US";
 
         recognition.onresult = (event: SpeechRecognitionEvent) => {
           let interimTranscript = "";
@@ -118,7 +130,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
           const words = currentTranscript.trim().split(/\s+/);
           const latestWord = words.pop() || null;
 
-          // Update last word only if it's different and not empty
           if (latestWord && latestWord !== lastWord) {
             setLastWord(latestWord);
           }
@@ -130,7 +141,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             event.error,
             event.message
           );
-          // Don't toast every error, can be noisy (e.g., 'no-speech')
           if (event.error !== "no-speech" && event.error !== "aborted") {
             toast({
               title: "Speech Recognition Error",
@@ -138,18 +148,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               variant: "destructive",
             });
           }
-          // Don't stop recording, just stop recognition feedback
           cleanupSpeechRecognition();
         };
 
         recognition.onend = () => {
-          // Check if it ended naturally while still supposed to be recording
           if (isRecording && speechRecognitionRef.current) {
             console.log("Speech recognition ended prematurely, restarting...");
-            // Optionally restart it, but be careful of infinite loops on errors
-            // recognition.start();
           } else {
-            // Normal end or stopped manually
             console.log("Speech recognition ended.");
           }
         };
@@ -164,7 +169,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             "Live speech feedback is not supported or failed to start.",
           variant: "default",
         });
-        speechRecognitionRef.current = null; // Ensure it's null if setup fails
+        speechRecognitionRef.current = null;
       }
     } else {
       console.warn("SpeechRecognition API not supported in this browser.");
@@ -174,21 +179,18 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         variant: "default",
       });
     }
-  }, [onRecordingComplete, toast, lastWord]); // Added lastWord dependency for comparison
+  }, [onRecordingComplete, toast, lastWord]);
 
   const stopRecording = useCallback(() => {
-    // Stop MediaRecorder first
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop(); // onstop will handle the rest
+      mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
       toast({ title: "Recording stopped", description: "Processing audio..." });
     }
-    // Stop SpeechRecognition
     cleanupSpeechRecognition();
     setIsRecording(false);
   }, [isRecording, toast]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (
@@ -198,8 +200,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         mediaRecorderRef.current.stop();
       }
       cleanupSpeechRecognition();
-      // Stop any associated media streams
-      // (Handled in mediaRecorder.onstop, but good practice for safety)
       if (mediaRecorderRef.current?.stream) {
         mediaRecorderRef.current.stream
           .getTracks()
@@ -217,7 +217,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         className={`w-24 h-24 rounded-full shadow-lg transition-transform transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed text-accent-foreground ${
           isRecording
             ? "bg-gradient-to-br from-red-500 to-red-700 hover:from-red-500/90 hover:to-red-700/90"
-            : "bg-gradient-to-br from-accent to-blue-700 hover:from-accent/90 hover:to-blue-700/90" // Adjusted end color for gradient
+            : "bg-gradient-to-br from-accent to-blue-700 hover:from-accent/90 hover:to-blue-700/90"
         }`}
         aria-label={isRecording ? "Stop Recording" : "Start Recording"}
       >
@@ -238,7 +238,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
           {lastWord ? lastWord : "Recording..."}
         </p>
       )}
-      {isProcessing && <div className="h-6 mt-4"></div> /* Placeholder */}
+      {isProcessing && <div className="h-6 mt-4"></div>}
     </div>
   );
 };

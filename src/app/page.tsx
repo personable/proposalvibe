@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { categorizeInformationAction, transcribeAudioAction } from "./actions";
 import AudioRecorder from "@/components/audio-recorder";
 import CategoryCard from "@/components/category-card";
@@ -27,6 +28,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  Percent,
 } from "lucide-react";
 import type { CategorizeInformationOutput } from "@/ai/flows/categorize-information";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +62,7 @@ const EXAMPLE_CARDS = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [transcribedText, setTranscribedText] = useState<string | null>(null);
   const [categorizedInfo, setCategorizedInfo] = useState<CategorizeInformationOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +73,8 @@ export default function Home() {
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [scopeImages, setScopeImages] = useState<ImageDetail[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [downPaymentPercentage, setDownPaymentPercentage] = useState<string>("");
+  const [termsAndConditions, setTermsAndConditions] = useState<string>("");
 
   const [contactName, setContactName] = useState("");
   const [contactAddress, setContactAddress] = useState("");
@@ -96,10 +102,13 @@ export default function Home() {
       phone: categorizedInfo.contactInformation.phone,
       email: categorizedInfo.contactInformation.email,
       timeline: categorizedInfo.timeline,
-      budget: categorizedInfo.budget
+      budget: categorizedInfo.budget,
+      downPayment: downPaymentPercentage,
+      terms: termsAndConditions
     });
 
-    window.location.href = `/document?${params.toString()}`;
+    // Navigate in the same window
+    router.push(`/document?${params.toString()}`);
   };
 
   const handleRecordingComplete = async (audioDataUri: string) => {
@@ -123,6 +132,8 @@ export default function Home() {
     setContactAddress("");
     setContactPhone("");
     setContactEmail("");
+    setDownPaymentPercentage("");
+    setTermsAndConditions("");
 
     try {
       const transcriptionResult = await transcribeAudioAction({ audioDataUri });
@@ -154,11 +165,23 @@ export default function Home() {
   };
 
   const handleNextCard = () => {
-    setCurrentCardIndex((prev) => (prev + 1) % EXAMPLE_CARDS.length);
+    if (currentCardIndex < EXAMPLE_CARDS.length - 1) {
+      setCurrentCardIndex(currentCardIndex + 1);
+    }
   };
 
   const handlePrevCard = () => {
-    setCurrentCardIndex((prev) => (prev - 1 + EXAMPLE_CARDS.length) % EXAMPLE_CARDS.length);
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex(currentCardIndex - 1);
+    }
+  };
+
+  const handleDownPaymentChange = (value: string) => {
+    // Only allow numbers and limit to 100
+    const numValue = value.replace(/[^\d]/g, '');
+    if (numValue === '' || (parseInt(numValue) >= 0 && parseInt(numValue) <= 100)) {
+      setDownPaymentPercentage(numValue);
+    }
   };
 
   const renderSkeleton = () => (
@@ -304,87 +327,85 @@ export default function Home() {
     selectedImageIndex !== null ? scopeImages[selectedImageIndex] : null;
 
   return (
-    <div
-      className="mx-auto py-8"
-      style={{
-        display: "grid",
-        gridTemplateRows: "1fr auto",
-        minHeight: "100%",
-      }}
-    >
+    <div className="mx-auto py-8" style={{ display: "grid", gridTemplateRows: "1fr auto", minHeight: "100%" }}>
       <main style={{ overflowY: "auto" }}>
-        {!isLoading &&
-          !isCategorizing &&
-          !transcribedText &&
-          !categorizedInfo && (
-            <>
-              <h1 className="text-2xl mb-10 text-center font-bold">
-                Tap the 🎙️ and talk about the topics on each of the cards &hellip;
-              </h1>
+        {!isLoading && !isCategorizing && !transcribedText && !categorizedInfo && (
+          <>
+            <h1 className="text-2xl mb-10 text-center font-bold">
+              Tap the 🎙️ and talk about the topics on each of the cards &hellip;
+            </h1>
 
-              <div className="relative w-full overflow-hidden px-4">
-                <div className="relative flex justify-center items-center">
-                  <button
-                    onClick={handlePrevCard}
-                    className="absolute left-0 z-10 p-2 bg-white/80 rounded-full shadow-lg"
-                  >
-                    <ChevronLeft className="h-6 w-6" />
-                  </button>
-                  
-                  <div className="w-[320px] relative">
-                    {EXAMPLE_CARDS.map((card, index) => (
-                      <div
-                        key={index}
-                        className={cn(
-                          "absolute top-0 w-full transition-all duration-300 transform",
-                          index === currentCardIndex
-                            ? "relative z-20 opacity-100 translate-x-0"
-                            : index === (currentCardIndex + 1) % EXAMPLE_CARDS.length
-                            ? "opacity-50 translate-x-[90%]"
-                            : "opacity-0 pointer-events-none translate-x-full"
-                        )}
-                      >
-                        <Card className="h-[300px] bg-white shadow-lg">
-                          <CardHeader>
-                            <div className="flex items-center gap-2">
-                              <span className="text-2xl">{card.icon}</span>
-                              <CardTitle>{card.title}</CardTitle>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-muted-foreground text-m leading-relaxed">
-                              Example: &#8220;{card.content}&#8221;
-                            </p>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleNextCard}
-                    className="absolute right-0 z-10 p-2 bg-white/80 rounded-full shadow-lg"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
-                </div>
-
-                <div className="flex justify-center gap-1 mt-4">
-                  {EXAMPLE_CARDS.map((_, index) => (
+            <div className="relative w-full overflow-hidden px-4">
+              <div className="relative flex justify-center items-center">
+                <button
+                  onClick={handlePrevCard}
+                  className={cn(
+                    "absolute left-0 z-10 p-2 bg-white/80 rounded-full shadow-lg",
+                    currentCardIndex === 0 && "opacity-50 cursor-not-allowed"
+                  )}
+                  disabled={currentCardIndex === 0}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                
+                <div className="w-[320px] relative">
+                  {EXAMPLE_CARDS.map((card, index) => (
                     <div
                       key={index}
                       className={cn(
-                        "w-2 h-2 rounded-full transition-colors",
+                        "absolute top-0 w-full transition-all duration-300 transform",
                         index === currentCardIndex
-                          ? "bg-foreground"
-                          : "bg-muted"
+                          ? "relative z-20 opacity-100 translate-x-0"
+                          : index === currentCardIndex + 1
+                          ? "opacity-50 translate-x-[90%]"
+                          : "opacity-0 pointer-events-none translate-x-full"
                       )}
-                    />
+                    >
+                      <Card className="h-[300px] bg-white shadow-lg">
+                        <CardHeader>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{card.icon}</span>
+                            <CardTitle>{card.title}</CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground text-m leading-relaxed">
+                            Example: &#8220;{card.content}&#8221;
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
                   ))}
                 </div>
+
+                <button
+                  onClick={handleNextCard}
+                  className={cn(
+                    "absolute right-0 z-10 p-2 bg-white/80 rounded-full shadow-lg",
+                    currentCardIndex === EXAMPLE_CARDS.length - 1 && "opacity-50 cursor-not-allowed"
+                  )}
+                  disabled={currentCardIndex === EXAMPLE_CARDS.length - 1}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
               </div>
-            </>
-          )}
+
+              <div className="flex justify-center gap-1 mt-4">
+                {EXAMPLE_CARDS.map((_, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "w-2 h-2 rounded-full transition-colors",
+                      index === currentCardIndex
+                        ? "bg-foreground"
+                        : "bg-muted"
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {transcribedText && (
           <Card className="mt-8 mb-6 shadow-sm bg-secondary border-secondary-foreground/10 sr-only">
@@ -415,9 +436,7 @@ export default function Home() {
                   <Input
                     id="contact-name"
                     value={contactName === "Not mentioned" ? "" : contactName}
-                    onChange={(e) =>
-                      handleContactChange("name", e.target.value)
-                    }
+                    onChange={(e) => handleContactChange("name", e.target.value)}
                     placeholder="Enter name..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -431,12 +450,8 @@ export default function Home() {
                   </Label>
                   <Input
                     id="contact-address"
-                    value={
-                      contactAddress === "Not mentioned" ? "" : contactAddress
-                    }
-                    onChange={(e) =>
-                      handleContactChange("address", e.target.value)
-                    }
+                    value={contactAddress === "Not mentioned" ? "" : contactAddress}
+                    onChange={(e) => handleContactChange("address", e.target.value)}
                     placeholder="Enter address..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -452,9 +467,7 @@ export default function Home() {
                     id="contact-phone"
                     type="tel"
                     value={contactPhone === "Not mentioned" ? "" : contactPhone}
-                    onChange={(e) =>
-                      handleContactChange("phone", e.target.value)
-                    }
+                    onChange={(e) => handleContactChange("phone", e.target.value)}
                     placeholder="Enter phone..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -470,9 +483,7 @@ export default function Home() {
                     id="contact-email"
                     type="email"
                     value={contactEmail === "Not mentioned" ? "" : contactEmail}
-                    onChange={(e) =>
-                      handleContactChange("email", e.target.value)
-                    }
+                    onChange={(e) => handleContactChange("email", e.target.value)}
                     placeholder="Enter email..."
                     className="mt-1 h-9 text-sm"
                   />
@@ -491,8 +502,7 @@ export default function Home() {
                   htmlFor="scope-image-input"
                   className={cn(
                     "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 cursor-pointer",
-                    scopeImages.length >= MAX_IMAGES &&
-                      "opacity-50 cursor-not-allowed"
+                    scopeImages.length >= MAX_IMAGES && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Upload className="mr-2 h-4 w-4" />
@@ -512,7 +522,7 @@ export default function Home() {
                     {scopeImages.map((image, index) => (
                       <div
                         key={image.id}
-                        className="relative group flex flex-col items-center"
+                        className="relative group/menu-item flex flex-col items-center"
                       >
                         <button
                           onClick={() => openImageModal(index)}
@@ -560,22 +570,77 @@ export default function Home() {
               value={categorizedInfo.timeline}
               onChange={(value) => handleCategoryChange("timeline", value)}
             />
-            <CategoryCard
-              title="Budget"
-              icon={DollarSign}
-              isEditable
-              value={categorizedInfo.budget}
-              onChange={(value) => handleCategoryChange("budget", value)}
-            >
-              {lineItems.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium mb-2 text-primary">
-                    Line Items:
-                  </h4>
-                  <LineItemTable lineItems={lineItems} />
+            <CategoryCard title="Budget" icon={DollarSign}>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-bold">Budget</h2>
+                  <span className="text-2xl">$</span>
                 </div>
-              )}
-              <div>{manageLineItemsButton}</div>
+                
+                <Textarea
+                  value={categorizedInfo.budget === "Not mentioned" ? "" : categorizedInfo.budget}
+                  onChange={(e) => handleCategoryChange("budget", e.target.value)}
+                  placeholder="Enter budget details..."
+                  className="min-h-[100px] text-sm bg-white"
+                />
+
+                {lineItems.length > 0 && (
+                  <div className="bg-white p-4 rounded-lg border">
+                    <LineItemTable lineItems={lineItems} />
+                  </div>
+                )}
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsLineItemModalOpen(true)}
+                  className="w-full"
+                >
+                  {lineItems.length > 0 ? (
+                    <Pencil className="mr-2 h-4 w-4" />
+                  ) : (
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                  )}
+                  {lineItems.length > 0 ? "View/Edit Line Items" : "Add Line Items"}
+                </Button>
+
+                <div className="pt-4 border-t">
+                  <Label htmlFor="down-payment" className="text-sm font-medium flex items-center gap-2">
+                    <Percent className="h-4 w-4" />
+                    Down Payment Percentage
+                  </Label>
+                  <div className="mt-2 relative">
+                    <Input
+                      id="down-payment"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={downPaymentPercentage}
+                      onChange={(e) => handleDownPaymentChange(e.target.value)}
+                      placeholder="Enter down payment percentage..."
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CategoryCard>
+
+            <CategoryCard title="Terms & Conditions" icon={FileText}>
+              <div className="space-y-2">
+                <Label htmlFor="terms" className="text-sm font-medium">
+                  Additional Terms & Conditions
+                </Label>
+                <Textarea
+                  id="terms"
+                  value={termsAndConditions}
+                  onChange={(e) => setTermsAndConditions(e.target.value)}
+                  placeholder="Enter any additional terms and conditions..."
+                  className="min-h-[150px]"
+                />
+              </div>
             </CategoryCard>
           </div>
         )}

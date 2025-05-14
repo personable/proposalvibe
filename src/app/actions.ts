@@ -1,5 +1,3 @@
-// @ts-nocheck
-// TODO: Fix TS errors and remove the Nocheck
 'use server';
 
 import { transcribeAudio, type TranscribeAudioInput, type TranscribeAudioOutput } from '@/ai/flows/transcribe-audio';
@@ -10,12 +8,19 @@ export async function transcribeAudioAction(
 ): Promise<TranscribeAudioOutput> {
   console.log('Transcribing audio with data URI length:', input.audioDataUri?.length);
   try {
+    // Validate audio data URI format before processing
+    const dataUriPattern = /^data:audio\/(webm|wav|ogg|mp3);base64,([a-zA-Z0-9+/]+=*)$/;
+    if (!dataUriPattern.test(input.audioDataUri)) {
+      throw new Error('Invalid audio data URI format');
+    }
+
     const result = await transcribeAudio(input);
     console.log('Transcription successful:', result);
     return result;
   } catch (error) {
     console.error('Error in transcribeAudioAction:', error);
-    throw new Error(`Failed to transcribe audio: ${error instanceof Error ? error.message : String(error)}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to transcribe audio: ${errorMessage}`);
   }
 }
 

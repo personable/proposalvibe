@@ -10,9 +10,16 @@
 import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
 
+// Regular expression to validate data URI format
+const dataUriPattern = /^data:audio\/(webm|wav|ogg|mp3);base64,([a-zA-Z0-9+/]+=*)$/;
+
 const TranscribeAudioInputSchema = z.object({
   audioDataUri: z
     .string()
+    .regex(
+      dataUriPattern,
+      'Invalid audio data URI format. Must be in format: data:audio/<type>;base64,<data>'
+    )
     .describe(
       "The audio data as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
@@ -31,18 +38,10 @@ export async function transcribeAudio(input: TranscribeAudioInput): Promise<Tran
 const transcribeAudioPrompt = ai.definePrompt({
   name: 'transcribeAudioPrompt',
   input: {
-    schema: z.object({
-      audioDataUri: z
-        .string()
-        .describe(
-          "The audio data as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-        ),
-    }),
+    schema: TranscribeAudioInputSchema,
   },
   output: {
-    schema: z.object({
-      transcription: z.string().describe('The transcribed text from the audio.'),
-    }),
+    schema: TranscribeAudioOutputSchema,
   },
   prompt: `Transcribe the following audio to text:\n\n{{media url=audioDataUri}}`,
 });
